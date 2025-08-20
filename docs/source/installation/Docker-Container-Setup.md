@@ -15,7 +15,7 @@ Below is a short summary for this and the full guide can be found [here](https:/
 > - Install the ngc client https://org.ngc.nvidia.com/setup/installers/cli (for the config just press enter twice. i.e. use the default config)
 > - For setting up the API key: [api key setup](https://org.ngc.nvidia.com/setup/api-key) ![image](https://github.com/user-attachments/assets/f773bcc2-fed0-4266-9fb2-10e23b9f874f)
 
-You need to have the Isaac Lab repo cloned (`git clone https://github.com/isaac-sim/IsaacLab.git`):
+You need to have the Isaac Lab repo cloned:
 ```bash
 git clone https://github.com/isaac-sim/IsaacLab
 cd IsaacLab
