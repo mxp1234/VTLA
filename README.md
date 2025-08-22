@@ -10,10 +10,10 @@
 
 **Keywords:** tactile sensing, gelsight, isaaclab, vision-based-tactile-sensor, vbts, reinforcement learning
 
-> [!WARNING]
+> [!note]
 > **Preview Release**:
 >
-> The framework is under active development and still pretty much in its baby-phase. The current version is more like a showcase.
+> The framework is under active development and currently in its beta phase.  
 > If you encounter bugs or have suggestions on how the framework can be improved, please tell us about them (e.g. via [Issues](https://github.com/DH-Ng/TacEx/issues)/[Discussions](https://github.com/DH-Ng/TacEx/discussions)).
 
 
@@ -23,7 +23,7 @@
 The framework integrates multiple simulation approaches for VBTS's and aims to be modular and extendable.
 Components can be easily switched out, added and modified.
 
-Currently, only the **GelSight Mini** is supported, but you can also easily add your own sensor (guide coming soon). We also plan to add more VBTS sensor types later.
+Currently, only the **GelSight Mini** is supported, but you can also easily add your own sensor (guide coming soon). We also plan to add more VBTS types later.
 
 ## **Main features**:
 - [GPU accelerated Tactile RGB simulation](https://github.com/TimSchneider42/taxim) via [Taxim](https://github.com/Robo-Touch/Taxim)'s simulation approach
@@ -40,14 +40,14 @@ Checkout the [website](https://sites.google.com/view/tacex) for showcases and th
 > TacEx currently works with **Isaac Sim 4.5** and **IsaacLab 2.1.0**.
 > The installation was tested on Ubuntu 22.04 with a 4090 GPU and Driver Version 550.163.01 + Cuda 12.4.
 
-0. Make sure that you have **git-lfs**:
+**0.** Make sure that you have **git-lfs**:
 
 ```bash
 # Need it for the USD assets
 git lfs install
 ```
 
-1. Clone this repository and its submodules:
+**1.** Clone this repository and its submodules:
 ```bash
 git clone --recurse-submodules https://github.com/DH-Ng/TacEx
 cd TacEx
