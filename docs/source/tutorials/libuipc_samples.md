@@ -1,11 +1,12 @@
-libuipc provides plenty of [samples](https://github.com/spiriMirror/libuipc-samples). We provide a few examples which correspond to these examples. They are almost the same as the libuipc samples. The only differences are:
+# libuipc-samples in Isaac Sim
+**libuipc** provides plenty of [samples](https://github.com/spiriMirror/libuipc-samples). We provide a few examples which correspond to these examples. They are almost the same as the libuipc samples. The only differences are:
 
 - we need to start Isaac Sim first and create a base scene
 - we render in Isaac Sim, instead of polyscope
 
 Let's take a look at one example.
 
-# TacEx and hello_libuipc
+# hello_libuipc via TacEx
 
 [hello_libuipc](https://github.com/spiriMirror/libuipc-samples/blob/main/python/1_hello_libuipc/main.py) is the simplest libuipc example and showcases how to
 
@@ -20,7 +21,7 @@ Let's take a look how `hello_libuipc` looks like in TacEx.
 ## The Code
 
 <details>
-<summary>Code for hello_libuipc.py in TacEx</summary>
+<summary>Code for `hello_libuipc.py` in TacEx</summary>
 
 ![1_hello_libuipc.py](https://git.ias.informatik.tu-darmstadt.de/tactile-sensing/tacex/-/blob/main/source/tacex_uipc/examples/libuipc-samples/1_hello_libuipc.py)
 ```python

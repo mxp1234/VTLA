@@ -251,7 +251,7 @@ print_help () {
     echo -e "\t-p, --python           Run the python executable provided by Isaac Sim or virtual environment (if active)."
     echo -e "\t-s, --sim              Run the simulator executable (isaac-sim.sh) provided by Isaac Sim."
     echo -e "\t-t, --test             Run all python unittest tests."
-    # echo -e "\t-o, --docker           Run the docker container helper script (docker/container.sh)."
+    echo -e "\t-o, --docker           Run the docker container helper script (docker/container.sh)."
     echo -e "\t-v, --vscode           Generate the VSCode settings file from template."
     echo -e "\t-d, --docs             Build the documentation from source using sphinx."
     # echo -e "\t-c, --conda [NAME]       Create the conda environment for Isaac Lab. Default name is 'env_isaaclab'."
@@ -391,10 +391,10 @@ while [[ $# -gt 0 ]]; do
             ;;
         -o|--docker)
             # run the docker container helper script
-            docker_script=${TACEX_PATH}/docker/container.sh
-            echo "[INFO] Running docker utility script from: ${docker_script}"
+            echo "[INFO] Running docker utility script from: ${TACEX_PATH}/docker/container.py"
             shift # past argument
-            bash ${docker_script} $@
+            # call the python script
+            python3 "${TACEX_PATH}/docker/container.py" "${@:1}"
             # exit neatly
             break
             ;;

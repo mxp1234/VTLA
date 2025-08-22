@@ -125,7 +125,7 @@ class UipcIsaacAttachments:
             mesh = self.uipc_object.uipc_meshes[0]
             tet_points_world = mesh.positions().view()[:, :, 0]
             tet_indices = mesh.tetrahedra().topo().view()[:, :, 0]
-            attachment_offsets, idx, rigid_prims = self.compute_attachment_data(
+            attachment_offsets, idx, rigid_prims, attachment_points_pos, obj_pos = self.compute_attachment_data(
                 isaac_rigid_prim_path, tet_points_world, tet_indices, attachment_points_radius
             )
 
@@ -343,7 +343,7 @@ class UipcIsaacAttachments:
         # for j in range(0, attachment_points_positions.shape[0]):
         #     draw.draw_lines([obj_center], [attachment_points_positions[j,:]], [(255,255,0,0.5)], [10])
 
-        return attachment_offsets, idx, matching_prims
+        return attachment_offsets, idx, matching_prims, attachment_points_positions, obj_pos
 
     """
     Internal helper.

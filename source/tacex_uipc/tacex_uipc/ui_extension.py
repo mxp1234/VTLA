@@ -208,10 +208,21 @@ def _create_attachment(paths):
     except RuntimeError:
         pass
 
-    attachment_offsets, idx, rigid_prims = UipcIsaacAttachments.compute_attachment_data(
-        isaac_mesh_path, world_tet_points, tet_indices
+    attachment_offsets, idx, rigid_prims, attachment_points_positions, obj_pos = (
+        UipcIsaacAttachments.compute_attachment_data(isaac_mesh_path, world_tet_points, tet_indices)
     )
     _create_attachment_data_attributes(tet_mesh_path, attachment_offsets, idx)
+
+    # draw attachment data
+    draw.draw_points(
+        attachment_points_positions,
+        [(255, 0, 0, 0.5)] * attachment_points_positions.shape[0],
+        [30] * attachment_points_positions.shape[0],
+    )  # the new positions
+    obj_center = obj_pos
+
+    for j in range(0, attachment_points_positions.shape[0]):
+        draw.draw_lines([obj_center], [attachment_points_positions[j, :]], [(255, 255, 0, 0.5)], [10])
 
     get_physx_interface().release_physics_objects()
 
