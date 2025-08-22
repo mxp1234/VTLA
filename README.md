@@ -40,14 +40,14 @@ Checkout the [website](https://sites.google.com/view/tacex) for showcases and th
 > TacEx currently works with **Isaac Sim 4.5** and **IsaacLab 2.1.0**.
 > The installation was tested on Ubuntu 22.04 with a 4090 GPU and Driver Version 550.163.01 + Cuda 12.4.
 
-0. Make sure that you have **git-lfs**:
+**0.** Make sure that you have **git-lfs**:
 
 ```bash
 # Need it for the USD assets
 git lfs install
 ```
 
-1. Clone this repository and its submodules:
+**1.** Clone this repository and its submodules:
 ```bash
 git clone --recurse-submodules https://github.com/DH-Ng/TacEx
 cd TacEx
