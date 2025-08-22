@@ -137,7 +137,9 @@ class UipcObject(AssetBase):
 
         self.uipc_meshes = []
         # setup tet meshes for uipc
-        for prim in (
+        for (
+            prim
+        ) in (
             self._prim_view.prims
         ):  # todo dont loop over all prims of the view -> just take one base prim. Rather loop over the prim children?
             # need to access the mesh data of the usd prim
@@ -429,7 +431,8 @@ class UipcObject(AssetBase):
         # -- root state
         # note: we cast to tuple to avoid torch/numpy type mismatch.
         default_root_state = (
-            tuple(self.cfg.init_state.pos) + tuple(self.cfg.init_state.rot)
+            tuple(self.cfg.init_state.pos)
+            + tuple(self.cfg.init_state.rot)
             # + tuple(self.cfg.init_state.lin_vel)
             # + tuple(self.cfg.init_state.ang_vel)
         )

@@ -3,11 +3,11 @@
 The `tacex_uipc` package also comes with a UI extension which is defined in `source/tacex_uipc/ui_extension.py`.
 
 You can us it inside the "normal" ( = not standalone) Isaac Sim GUI.
-It enables you to 
+It enables you to
 - precompute a Tetrahedra mesh for a selected prim (via [wildmeshing](https://github.com/wildmeshing/wildmeshing-python))
 - update the surface mesh based on the tetrahedra mesh
 - create precomputed data for the `UIPC x Isaac` Attachments
-- extract the current uv map or set it via a numpy array (This is just experiemental for the uipc_texture based approach, which will be explained in another tutorial)
+- extract the current uv map or set it via a numpy array (This is just experimental for the uipc_texture based approach, which will be explained in another tutorial)
 
 
 # Setup the Extension
@@ -33,7 +33,7 @@ To enable the extension, follow these steps:
 - Select the mesh of the prim (not just the xForm!)
 - press `Compute Tet Mesh`
 
-Now you should see the tet mesh drawn as lines. 
+Now you should see the tet mesh drawn as lines.
 Here is an example:
 ![alt text](../_static/tutorials/tacex_uipc_extension/compute_tet_mesh.png)
 

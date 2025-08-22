@@ -191,7 +191,7 @@ pre-commit run --all-files
 
 ## Debugging
 
-If you did the setup correctly, you should have a launch config "Docker: Current File" for debugging. 
+If you did the setup correctly, you should have a launch config "Docker: Current File" for debugging.
 For more complex commands, such as RL training commands, you can add custom launch configs, which look like this:
 
 ```bash
