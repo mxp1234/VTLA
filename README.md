@@ -10,10 +10,10 @@
 
 **Keywords:** tactile sensing, gelsight, isaaclab, vision-based-tactile-sensor, vbts, reinforcement learning
 
-> [!WARNING]
+> [!note]
 > **Preview Release**:
 >
-> The framework is under active development and still pretty much in its baby-phase. The current version is more like a showcase.
+> The framework is under active development and currently in its beta phase.  
 > If you encounter bugs or have suggestions on how the framework can be improved, please tell us about them (e.g. via [Issues](https://github.com/DH-Ng/TacEx/issues)/[Discussions](https://github.com/DH-Ng/TacEx/discussions)).
 
 
