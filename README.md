@@ -23,7 +23,7 @@
 The framework integrates multiple simulation approaches for VBTS's and aims to be modular and extendable.
 Components can be easily switched out, added and modified.
 
-Currently, only the **GelSight Mini** is supported, but you can also easily add your own sensor (guide coming soon). We also plan to add more VBTS sensor types later.
+Currently, only the **GelSight Mini** is supported, but you can also easily add your own sensor (guide coming soon). We also plan to add more VBTS types later.
 
 ## **Main features**:
 - [GPU accelerated Tactile RGB simulation](https://github.com/TimSchneider42/taxim) via [Taxim](https://github.com/Robo-Touch/Taxim)'s simulation approach
