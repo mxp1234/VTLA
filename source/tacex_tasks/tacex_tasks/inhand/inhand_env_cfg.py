@@ -8,6 +8,7 @@ from __future__ import annotations
 from dataclasses import MISSING
 
 import isaaclab.sim as sim_utils
+import isaaclab_tasks.manager_based.manipulation.inhand.mdp as mdp
 from isaaclab.assets import ArticulationCfg, AssetBaseCfg, RigidObjectCfg
 from isaaclab.envs import ManagerBasedRLEnvCfg
 from isaaclab.managers import EventTermCfg as EventTerm
@@ -23,10 +24,9 @@ from isaaclab.utils import configclass
 from isaaclab.utils.assets import ISAAC_NUCLEUS_DIR
 from isaaclab.utils.noise import AdditiveGaussianNoiseCfg as Gnoise
 
-import isaaclab_tasks.manager_based.manipulation.inhand.mdp as mdp
+from tacex import GelSightSensorCfg
 
 from .mdp.observations import mean_marker_motion
-from tacex import GelSightSensorCfg
 
 ##
 # Scene definition

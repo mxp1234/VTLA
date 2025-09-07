@@ -5,6 +5,7 @@ from tacex.simulation_approaches.fots import FOTSMarkerSimulatorCfg
 from tacex.simulation_approaches.gpu_taxim import TaximSimulatorCfg
 
 from tacex_assets import TACEX_ASSETS_DATA_DIR
+
 from .gsmini_cfg import GelSightMiniCfg
 
 """Configuration for simulating the Gelsight Mini via GPU-Taxim and FOTS."""

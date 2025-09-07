@@ -3,10 +3,10 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
+from isaaclab.sensors import FrameTransformerCfg
 from isaaclab.utils import configclass
 
-# import isaaclab_tasks.manager_based.manipulation.inhand.inhand_env_cfg as inhand_env_cfg
-from ...inhand_env_cfg import InHandObjectEnvCfg, ObservationsCfg
+from tacex_assets import GELSIGHT_MINI_TAXIM_FOTS_CFG
 
 ##
 # Pre-defined configs
@@ -14,8 +14,8 @@ from ...inhand_env_cfg import InHandObjectEnvCfg, ObservationsCfg
 # from isaaclab_assets import ALLEGRO_HAND_CFG  # isort: skip
 from tacex_assets.robots.allegro_gsmini import ALLEGRO_HAND_GSMINI_CFG
 
-from isaaclab.sensors import FrameTransformerCfg
-from tacex_assets import GELSIGHT_MINI_TAXIM_FOTS_CFG
+# import isaaclab_tasks.manager_based.manipulation.inhand.inhand_env_cfg as inhand_env_cfg
+from ...inhand_env_cfg import InHandObjectEnvCfg, ObservationsCfg
 
 
 @configclass

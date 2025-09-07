@@ -20,9 +20,11 @@ import math
 import isaaclab.sim as sim_utils
 from isaaclab.actuators.actuator_cfg import ImplicitActuatorCfg
 from isaaclab.assets.articulation import ArticulationCfg
-# from isaaclab.utils.assets import ISAAC_NUCLEUS_DIR
 
 from tacex_assets import TACEX_ASSETS_DATA_DIR
+
+# from isaaclab.utils.assets import ISAAC_NUCLEUS_DIR
+
 
 ##
 # Configuration
