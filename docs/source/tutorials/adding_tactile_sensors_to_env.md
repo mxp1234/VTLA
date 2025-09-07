@@ -247,7 +247,7 @@ and use this in the environment config `source/tacex_tasks/tacex_tasks/inhand/in
 
 You can start the training by running
 ```bash
-python scripts/reinforcement_learning/skrl/train.py --task=TacEx-Repose-Cube-Allegro-v0 --headless --enable_cameras
+python scripts/reinforcement_learning/skrl/train.py --task=TacEx-Repose-Cube-Allegro-v0 --enable_cameras
 ```
 
 If you want to see the debug_visualization (when you set `debug_vis=True` in the sensor cfg):
