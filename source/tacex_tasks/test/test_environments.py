@@ -17,8 +17,8 @@ if sys.platform != "win32":
 from isaaclab.app import AppLauncher
 
 # launch the simulator
-# app_launcher = AppLauncher(headless=True, enable_cameras=True) # with headless, our camera envs don't seem to work
-app_launcher = AppLauncher(headless=False, enable_cameras=True)
+app_launcher = AppLauncher(headless=True, enable_cameras=True)  # with headless, our camera envs don't seem to work
+# app_launcher = AppLauncher(headless=False, enable_cameras=True)  # this does not work in docker container
 simulation_app = app_launcher.app
 
 

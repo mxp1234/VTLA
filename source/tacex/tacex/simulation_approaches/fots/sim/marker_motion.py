@@ -24,7 +24,7 @@ class MarkerMotion:
         self,
         frame0_blur,
         lamb,
-        mm2pix=19.58,  # FOTS default is 19.58
+        mm2pix=15.7729,  # FOTS default is 19.58, we use 1/0.0634 = 15.7729 (see https://github.com/gelsightinc/gsrobotics/tree/main?tab=readme-ov-file#1-what-is-the-mm-to-pixel-conversion-value)
         num_markers_col=9,
         num_markers_row=11,
         tactile_img_width=320,

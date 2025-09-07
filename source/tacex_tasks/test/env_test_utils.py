@@ -44,9 +44,13 @@ def setup_environment(
     # disable interactive mode for wandb for automate environments
     os.environ["WANDB_DISABLED"] = "true"
 
-    # acquire all TacEx environment names
+    # acquire all Isaac environment names
     registered_tasks = []
     for task_spec in gym.registry.values():
+        # # only consider Isaac environments
+        # if "Isaac" not in task_spec.id:
+        #     continue
+
         # only consider TacEx environments
         if "TacEx" not in task_spec.id:
             continue
@@ -59,8 +63,11 @@ def setup_environment(
         # so we collect these environments separately to run in a separate unit test.
         # apply factory filter
         if (factory_envs is True and ("Factory" not in task_spec.id and "Forge" not in task_spec.id)) or (
-            factory_envs is False and ("Factory" in task_spec.id or "Forge" in task_spec.id) or ("Uipc" in task_spec.id)
+            factory_envs is False and ("Factory" in task_spec.id or "Forge" in task_spec.id)
         ):
+            continue
+        # TODO: UIPC environments cause tests to fail if run together with other envs,
+        if "Uipc" in task_spec.id:
             continue
         # if None: no filter
 
