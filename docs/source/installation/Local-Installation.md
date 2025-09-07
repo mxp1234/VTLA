@@ -31,7 +31,7 @@ sudo apt install cmake build-essential
 git clone https://github.com/isaac-sim/IsaacLab
 cd IsaacLab
 # use Isaac Lab version 2.1.1
-git checkout 90b79bb2d44feb8d833f260f2bf37da3487180ba
+git checkout v2.1.1
 # activate the Isaac Sim python env
 conda activate env_isaaclab
 # install isaaclab extensions (with --editable flag)

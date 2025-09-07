@@ -29,6 +29,9 @@
 docker/artifacts/
 *.tmp
 
+# Doc Outputs
+**/docs/_build/*
+**/generated/*
 
 # Isaac-Sim packman
 _isaac_sim*
@@ -52,3 +55,9 @@ systems.json
 .cache/
 
 NvStreamer*
+
+# Tests
+tests/
+
+# Docker history
+.isaac-lab-docker-history

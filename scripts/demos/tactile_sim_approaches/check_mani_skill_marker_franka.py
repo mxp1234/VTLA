@@ -57,7 +57,7 @@ from tacex_assets import TACEX_ASSETS_DATA_DIR
 from tacex_assets.robots.franka.franka_gsmini_single_uipc import (
     FRANKA_PANDA_ARM_SINGLE_GSMINI_HIGH_PD_UIPC_CFG,
 )
-from tacex_assets.sensors.gelsight_mini.gsmini_taxim_fem_cfg import GelSightMiniTaximFemCfg
+from tacex_assets.sensors.gelsight_mini.gsmini_taxim_fem import GELSIGHT_MINI_TAXIM_FEM_CFG
 
 from tacex_uipc import (
     UipcIsaacAttachments,
@@ -210,9 +210,9 @@ class BallRollingEnvCfg(DirectRLEnvCfg):
         constraint_strength_ratio=100.0, body_name="gelsight_mini_case", debug_vis=False, compute_attachment_data=True
     )
 
-    gsmini = GelSightMiniTaximFemCfg(
+    gsmini = GELSIGHT_MINI_TAXIM_FEM_CFG.replace(
         prim_path="/World/envs/env_.*/Robot/gelsight_mini_case",
-        sensor_camera_cfg=GelSightMiniTaximFemCfg.SensorCameraCfg(
+        sensor_camera_cfg=GELSIGHT_MINI_TAXIM_FEM_CFG.SensorCameraCfg(
             prim_path_appendix="/Camera",
             update_period=0,
             resolution=(32, 24),

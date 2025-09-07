@@ -8,7 +8,7 @@ from tacex.simulation_approaches.gpu_taxim import TaximSimulatorCfg
 
 from tacex_assets import TACEX_ASSETS_DATA_DIR
 
-"""Configuration for the gelsight mini sensor."""
+"""Configuration class for the Gelsight Mini sensor."""
 
 
 @configclass
@@ -31,7 +31,7 @@ class GelSightMiniCfg(GelSightSensorCfg):
         clipping_range=(0.024, 0.029),
     )
 
-    update_period: float = 0.0
+    update_period: float = 0.01
 
     data_types: list[str] = ["tactile_rgb", "marker_motion", "height_map", "camera_depth", "camera_rgb"]
     """Output of the GelSight Sensor

@@ -61,7 +61,7 @@ from tacex_assets import TACEX_ASSETS_DATA_DIR
 from tacex_assets.robots.franka.franka_gsmini_single_rigid import (
     FRANKA_PANDA_ARM_SINGLE_GSMINI_HIGH_PD_RIGID_CFG,
 )
-from tacex_assets.sensors.gelsight_mini.gsmini_taxim_cfg import GelSightMiniTaximCfg
+from tacex_assets.sensors.gelsight_mini.gsmini_taxim import GELSIGHT_MINI_TAXIM_CFG
 
 #  from isaaclab.controllers.differential_ik_cfg import DifferentialIKControllerCfg
 # from isaaclab.envs.mdp.actions.actions_cfg import DifferentialInverseKinematicsActionCfg
@@ -181,7 +181,7 @@ class BallRollingEnvCfg(DirectRLEnvCfg):
         ),
     )
 
-    gsmini = GelSightMiniTaximCfg(
+    gsmini = GELSIGHT_MINI_TAXIM_CFG.replace(
         prim_path="/World/envs/env_.*/Robot/gelsight_mini_case",
     )
 

@@ -9,7 +9,7 @@ First, open the Isaac GUI.
 - set it as default prim
 - import the GelSight Mini case into the scene (drag and drop the file `source/tacex_assets/tacex_assets/data/Sensors/GelSight_Mini/Case.usd` into the scene)
 -> Asset Path should be relative (is done automatically by Isaac), so that it works across different systems.
-![alt text](image-1.png)
+![alt text](../_static/tutorials/creating_robot_asset_with_sensors/rel_asset_path.png)
 
 - move sensor case to desired position and attach with fixed joint to the articulation
 - import gelpad asset `source/tacex_assets/tacex_assets/data/Sensors/GelSight_Mini/Gelpad_low_res.usd`
@@ -39,7 +39,7 @@ Press play to check that it works as intended, i.e. Robot moves a little bit whi
 ### Create precomputed data for uipc sim
 You don't need to precompute data. In the standalone scripts you can decide if you compute the tet data (and attachment data) or use the precomputed ones to save some time.
 
-To do this, first enable tacex_uipc ui extension ([Guide](https://git.ias.informatik.tu-darmstadt.de/tactile-sensing/tacex#setup-as-omniverse-extension-optional)).
+To do this, first enable tacex_uipc ui extension (see [Guide](tacex_uipc_ui_extension.md)).
 Then
 - select gelpad mesh
 - press `compute tet mesh` button
@@ -47,7 +47,7 @@ Then
   - then press `compute attachment data`
 - save the updated usd file
 
-![alt text](image.png)
+![alt text](../_static/tutorials/creating_robot_asset_with_sensors/uipc_gelpad.png)
 
 # Create Config File
 - go to `source/tacex_assets/tacex_assets/robots/franka` and create a new python file

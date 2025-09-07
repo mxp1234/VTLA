@@ -20,7 +20,7 @@ You need to have the Isaac Lab repo cloned:
 git clone https://github.com/isaac-sim/IsaacLab
 cd IsaacLab
 # use Isaac Lab version 2.1.1
-git checkout 90b79bb2d44feb8d833f260f2bf37da3487180ba
+git checkout v2.1.1
 ```
 
 Then you can build the base image via:
@@ -166,7 +166,7 @@ If IsaacLab and IsaacSim python modules are not indexed correctly (i.e., the IDE
 To use pre-commit in the docker container, install it first:
 
 ```bash
-# only works with virtual env pip install pre-commit
+# `pip install pre-commit` only works with a virtual env
 apt-get update
 apt-get -y install pre-commit
 ```

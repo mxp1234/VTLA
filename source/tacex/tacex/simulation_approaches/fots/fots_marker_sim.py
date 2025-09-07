@@ -256,10 +256,10 @@ class FOTSMarkerSimulator(GelSightSimulator):
                         )  # default format omni.ui.TextureFormat.RGBA8_UNORM
 
                     marker_flow_i = self.sensor.data.output["marker_motion"][i]
-                    # frame = self._create_marker_img(marker_flow_i)
+                    frame = self._create_marker_img(marker_flow_i)
 
                     # draw current marker positions like ManiSkill-ViTac does
-                    frame = self.draw_markers(marker_flow_i[1].cpu().numpy())
+                    # frame = self.draw_markers(marker_flow_i[1].cpu().numpy())
 
                     # create tactile rgb img with markers
                     if "tactile_rgb" in self.sensor.cfg.data_types:

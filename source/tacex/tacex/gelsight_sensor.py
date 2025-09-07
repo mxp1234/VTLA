@@ -32,7 +32,8 @@ class GelSightSensor(SensorBase):
     cfg: GelSightSensorCfg
 
     def __init__(self, cfg: GelSightSensorCfg, gelpad_obj=None):
-        self.cfg = cfg
+        # initialize base class
+        super().__init__(cfg)
 
         self._prim_view = None
 
@@ -76,10 +77,8 @@ class GelSightSensor(SensorBase):
                     sensor=self, cfg=self.cfg.marker_motion_sim_cfg
                 )
 
-        self._prim_view = XFormPrim(prim_paths_expr=self.cfg.prim_path, name=f"{self.cfg.prim_path}", usd=False)
-
-        # initialize base class
-        super().__init__(self.cfg)
+        self._set_debug_vis_flag = False
+        self._debug_vis_is_initialized = False
 
     def __del__(self):
         """Unsubscribes from callbacks."""
@@ -118,9 +117,9 @@ class GelSightSensor(SensorBase):
         return self._frame
 
     @property
-    def tactile_image_shape(self) -> tuple[int, int]:
+    def tactile_image_shape(self) -> tuple[int, int, int]:
         """Shape of the simulated tactile RGB image, i.e. (channels, height, width)."""
-        return self.cfg.optical_sim_cfg.tactile_img_res[1], self.cfg.optical_sim_cfg.tactile_img_res[0], 3
+        return (self.cfg.optical_sim_cfg.tactile_img_res[1], self.cfg.optical_sim_cfg.tactile_img_res[0], 3)
 
     @property
     def camera_resolution(self) -> tuple[int, int]:
@@ -185,9 +184,7 @@ class GelSightSensor(SensorBase):
 
         if (self.marker_motion_simulator is not None) and ("marker_motion" in self._data.output):
             # height_map_shifted = self.taxim._get_shifted_height_map(self._indentation_depth, self._data.output["height_map"])
-            self._data.output["marker_motion"][
-                :
-            ] = self.marker_motion_simulator.marker_motion_simulation()  # TODO adjust mm2pix value 19.58 #/19.58
+            self._data.output["marker_motion"][:] = self.marker_motion_simulator.marker_motion_simulation()
             # (yy_init_pos, xx_init_pos), i.e. along height x width of tactile img
             self._data.output["init_marker_pos"] = ([0], [0])
 
@@ -202,11 +199,12 @@ class GelSightSensor(SensorBase):
     # MARK: _init_impl
     def _initialize_impl(self):
         """Initializes the sensor handles and internal buffers."""
-        print(f"Initializing GelSight Sensor {self.cfg.prim_path}...")
+        print(f"Initializing GelSight Sensor `{self.cfg.prim_path}`...")
 
         # Initialize parent class
         super()._initialize_impl()
 
+        self._prim_view = XFormPrim(prim_paths_expr=self.cfg.prim_path, name=f"{self.cfg.prim_path}", usd=False)
         self._prim_view.initialize()
         # Check that sizes are correct
         if self._prim_view.count != self._num_envs:
@@ -336,7 +334,11 @@ class GelSightSensor(SensorBase):
         # reset internal buffers
         self.reset()
 
+        # create debug visualization
+        self._initialize_debug_vis(self._initialize_debug_vis_flag)
+
         # todo print init data
+        # print(self)
 
     # MARK: _update_buffers_impl
     def _update_buffers_impl(self, env_ids: Sequence[int]):
@@ -378,7 +380,12 @@ class GelSightSensor(SensorBase):
             self._data.output["marker_motion"][:] = self.marker_motion_simulator.marker_motion_simulation()
 
     def _set_debug_vis_impl(self, debug_vis: bool):
-        """Creates an USD attribute for the sensor asset, which can visualize the tactile image.
+        # we actually set the debug_vis in _initialize_impl, since we need the _prim_view, which
+        # is only correctly initialized after _initialize_impl method (in ManagerBased workflow, in Direct workflow you can control it yourself)
+        self._initialize_debug_vis_flag: bool = debug_vis
+
+    def _initialize_debug_vis(self, debug_vis: bool):
+        """Creates an USD attribute for the sensor assets, which can visualize the tactile image.
 
         Select the GelSight sensor case whose output you want to see in the Isaac Sim GUI,
         i.e. the `gelsight_mini_case` Xform (not the mesh!).
@@ -389,6 +396,8 @@ class GelSightSensor(SensorBase):
         If only optical simulation is used, then only an optical img is displayed.
         If only the marker simulatios is used, then only an image displaying the marker positions is displayed.
         If both, optical and marker simulation, are used, then the images are overlaid.
+
+        > Method has to be called after the prim_view was initialized.
         """
         # note: parent only deals with callbacks. not their visibility
         if debug_vis:
@@ -426,8 +435,10 @@ class GelSightSensor(SensorBase):
             if "marker_motion" in self.cfg.data_types:
                 self.marker_motion_simulator._set_debug_vis_impl(debug_vis)
 
+            self._debug_vis_is_initialized = True
+
     def _debug_vis_callback(self, event):
-        if self._prim_view is None:
+        if not self._debug_vis_is_initialized:
             return
 
         # Update the GUI windows
