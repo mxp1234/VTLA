@@ -139,9 +139,19 @@ Note: As you might have realized, the placement of the sensors here is very roug
 ## Adjusting the ManagerBased Environment
 The Taxim and FOTS simulation can be used inside the Manager-Based workflow.
 
-We copy the [inhand_manipulation environment](https://github.com/isaac-sim/IsaacLab/blob/main/source/isaaclab_tasks/isaaclab_tasks/manager_based/manipulation/inhand/inhand_env_cfg.py) of Isaac Lab and adjust it to include our tactile simulation.
+We copy the [inhand_manipulation environment](https://github.com/isaac-sim/IsaacLab/blob/main/source/isaaclab_tasks/isaaclab_tasks/manager_based/manipulation/inhand/inhand_env_cfg.py) of Isaac Lab and adjust it to include our tactile simulation.  
+> You can find the adjusted environment at `source/tacex_tasks/tacex_tasks/inhand`.
 
-First, we need to add the sensor config to the `InHandObjectSceneCfg` class in the `inhand_env_cfg.py` file:
+First, we need to add the sensors to the `InHandObjectSceneCfg` class in the `inhand_env_cfg.py` file:
+```python
+    # GelSight Minis
+    gsmini_ring: GelSightSensorCfg = MISSING
+    gsmini_middle: GelSightSensorCfg = MISSING
+    gsmini_index: GelSightSensorCfg = MISSING
+    gsmini_thumb: GelSightSensorCfg = MISSING
+```
+The specific config files are added in `source/tacex_tasks/tacex_tasks/inhand/config/allegro_hand/allegro_env_cfg.py`, i.e. after the robot config was set.
+> We need to set it after the robot config was set, since we need the robot prim_path for our sensor config.
 ```python
     from tacex_assets import GELSIGHT_MINI_TAXIM_FOTS_CFG
     # GelSight Minis
@@ -157,11 +167,12 @@ First, we need to add the sensor config to the `InHandObjectSceneCfg` class in t
             debug_vis=False,
         ),
     )
+  # Do this for the 3 other fingers too...
 ```
 - we use the preconfigured configuration file for Taxim and FOTS simulation
-- we also setup a `FrameTransformer  for FOTS, which takes the gelpad path and the object path. This is required to compute the relative transformation between the gelpad and object.
+- we also setup a `FrameTransformer` for FOTS, which takes the gelpad path and the object path. This is required to compute the relative transformation between the gelpad and object.
 
-We also need to adjust the `__init__.py` file to register our modified environment:
+We also need to adjust the `__init__.py` file in `source/tacex_tasks/tacex_tasks/inhand/config/allegro_hand/` to register our modified environment:
 ```python
 gym.register(
     id="TacEx-Repose-Cube-Allegro-v0",
