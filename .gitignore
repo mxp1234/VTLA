@@ -89,3 +89,5 @@ isaac_tasks_list.txt
 # tools/check_env.py
 IsaacLab/
 *.pth
+last.ckpt
+*.ckpt
