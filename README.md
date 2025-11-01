@@ -84,3 +84,41 @@ TacEx is built upon code from
 - [FOTS](https://github.com/Rancho-zhao/FOTS)
 - [UIPC](https://github.com/spiriMirror/libuipc)
 - [ManiSkill-ViTac challenge](https://github.com/chuanyune/ManiSkill-ViTac2025)
+
+
+## VTLA command
+
+ ### 推理+录制视频
+ ```bash
+  ./IsaacLab/isaaclab.sh -p scripts/reinforcement_learning/rl_games/play.py \
+      --task  TacEx-Factory-PegInsert-Direct-v0 \
+      --num_envs 1 \
+      --enable_cameras \
+      --video \
+      --video_length 200 \
+     --checkpoint  /home/pi-zero/isaac-sim/TacEx/logs/rl_games/Factory/test/nn/last_Factory_ep_400_rew_344.56436.pth
+```
+
+ ### without tactile 训练
+ ```bash
+  ./IsaacLab/isaaclab.sh -p scripts/reinforcement_learning/rl_games/train.py \
+      --task  TacEx-Factory-PegInsert-Direct-v0 \
+      --num_envs 128 \
+      --enable_cameras \
+      --wandb-project-name isaac_lab \
+      --wandb-entity 2996124754-salesforce \
+      --track
+      --headless
+```
+
+ ### with tactile 训练
+```bash
+       ./IsaacLab/isaaclab.sh -p scripts/reinforcement_learning/rl_games/train.py \
+      --task  TacEx-Factory-PegInsert-Tactile-v1 \
+      --num_envs 128 \
+      --enable_cameras \
+      --wandb-project-name isaac_lab_tactile_v1 \
+      --wandb-entity 2996124754-salesforce \
+      --track
+      --headless
+```
