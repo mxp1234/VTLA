@@ -122,3 +122,14 @@ TacEx is built upon code from
       --track
       --headless
 ```
+
+使用[sparsh](https://github.com/facebookresearch/sparsh)的预训练触觉编码/解码器：
+
+下载路径：
+```
+https://huggingface.co/facebook/sparsh-gelsight-forcefield-decoder/tree/main/gelsight_t1_forcefield_dino_vitbase_bg/checkpoints
+```
+存放目录：
+```
+/home/pi-zero/isaac-sim/TacEx/source/tacex_tasks/tacex_tasks/factory_version1/network/last.ckpt
+```
