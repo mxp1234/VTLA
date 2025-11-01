@@ -88,3 +88,4 @@ isaac_tasks_list.txt
 # test_tactile_integration.py
 # tools/check_env.py
 IsaacLab/
+*.pth
