@@ -61,3 +61,29 @@ tests/
 
 # Docker history
 .isaac-lab-docker-history
+
+# Large external dependencies (should be installed separately)
+IsaacLab/
+cmake-3.26.4-linux-x86_64/
+cmake-3.26.4-linux-x86_64.tar.gz
+
+# Output and temporary directories
+_out_sdrec/
+_out*/
+tactile_images/
+
+# Local development
+ALL_readme/
+code/
+materials/
+isaac_tasks_list.txt
+*.log
+
+# Test scripts (if you don't want to share)
+# Uncomment the ones you don't want to upload:
+# run_factory_viz_test.sh
+# test_desk_cleanup_config.sh
+# test_v2_config.sh
+# test_tactile_encoder.py
+# test_tactile_integration.py
+# tools/check_env.py
