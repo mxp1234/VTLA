@@ -250,10 +250,10 @@ You can start the training by running
 python scripts/reinforcement_learning/skrl/train.py --task=TacEx-Repose-Cube-Allegro-v0 --enable_cameras
 ```
 
-If you want to see the debug_visualization (when you set `debug_vis=True` in the sensor cfg):
-- click on a sensor case Xform (e.g. `/World/envs/env_0/Robot/Case_ring_3`)
-- click on the `Property` Tab and scroll down to `Raw USD Properties/Extra Properties`
-- toggle on `debug_marker_motion`
+    If you want to see the debug_visualization (when you set `debug_vis=True` in the sensor cfg):
+    - click on a sensor case Xform (e.g. `/World/envs/env_0/Robot/Case_ring_3`)
+    - click on the `Property` Tab and scroll down to `Raw USD Properties/Extra Properties`
+    - toggle on `debug_marker_motion`
 
 ---
 

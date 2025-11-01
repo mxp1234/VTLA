@@ -1,5 +1,6 @@
 import argparse
-
+import os
+os.environ["LD_LIBRARY_PATH"] = "/home/pi-zero/isaac-sim/TacEx/source/tacex_uipc/build/Release/bin:/usr/lib/x86_64-linux-gnu:/usr/local/cuda/lib64"
 from isaaclab.app import AppLauncher
 
 # add argparse arguments

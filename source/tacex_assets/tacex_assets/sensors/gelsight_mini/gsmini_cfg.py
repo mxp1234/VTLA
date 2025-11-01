@@ -26,7 +26,7 @@ class GelSightMiniCfg(GelSightSensorCfg):
     sensor_camera_cfg: GelSightSensorCfg.SensorCameraCfg = GelSightSensorCfg.SensorCameraCfg(
         prim_path_appendix="/Camera",
         update_period=0,
-        resolution=(320, 240),
+        resolution=(640, 480),  # Match calibration file resolution
         data_types=["depth"],
         clipping_range=(0.024, 0.029),
     )
@@ -50,8 +50,8 @@ class GelSightMiniCfg(GelSightSensorCfg):
         calib_folder_path=f"{TACEX_ASSETS_DATA_DIR}/Sensors/GelSight_Mini/calibs/640x480",
         gelpad_height=gelpad_dimensions.height,
         gelpad_to_camera_min_distance=0.024,
-        with_shadow=False,
-        tactile_img_res=(320, 240),
+        with_shadow=True,  # Enable shadows for realistic color variation
+        tactile_img_res=(640, 480),  # Match calibration file resolution
         device="cuda",
     )
 

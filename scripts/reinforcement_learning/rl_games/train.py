@@ -156,7 +156,7 @@ def main(env_cfg: ManagerBasedRLEnvCfg | DirectRLEnvCfg | DirectMARLEnvCfg, agen
         video_kwargs = {
             "video_folder": os.path.join(log_root_path, log_dir, "videos", "train"),
             "step_trigger": lambda step: step % args_cli.video_interval == 0,
-            "video_length": args_cli.video_length,
+            "video_length": arglogs/rl_games/Factory/test/nn/Factory.pths_cli.video_length,
             "disable_logger": True,
         }
         print("[INFO] Recording videos during training.")
