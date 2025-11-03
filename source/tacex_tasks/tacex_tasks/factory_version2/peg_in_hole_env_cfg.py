@@ -11,7 +11,7 @@ from dataclasses import field
 from tacex_assets import TACEX_ASSETS_DATA_DIR
 from tacex_assets.sensors.gelsight_mini.gsmini_cfg import GelSightMiniCfg
 
-from .peg_in_hole_tasks_cfg import ASSET_DIR, PegInHoleTask, PegInHoleCircleHole_I, PegInHoleCircleHole_test, PegInHoleLHole_III, PegInHoleSquareHole_II
+from .peg_in_hole_tasks_cfg import ASSET_DIR, PegInHoleTask, PegInHoleCircleHole_I, PegInHoleCircleHole_test, PegInHoleLHole_III, PegInHoleSquareHole_I, PegInHoleSquareHole_II, PegInHoleSquareHole_III, PegInHoleSquareHole_IV
 
 OBS_DIM_CFG = { #  这个字典定义了“观测（Observation）”中各个组成部分的维度
     "fingertip_pos": 3, # 夹爪指尖中心点的三维坐标 (x, y, z)，所以维度是3
@@ -298,12 +298,42 @@ class PegInHoleCircleHole_I_Cfg(PegInHoleEnvCfg):
     episode_length_s = task.duration_s
     
 @configclass
+class PegInHoleSquareHole_I_Cfg(PegInHoleEnvCfg):
+    """
+    这个配置类专门用于“方形插销-任务I”环境。
+    它继承自PegInHoleEnvCfg，并覆写了一些参数以适应具体任务需求。
+    """
+    task= PegInHoleSquareHole_I() # 使用方形插销任务I的具体配置对象
+    task_name: str = task.name
+    episode_length_s = task.duration_s
+    
+@configclass
 class PegInHoleSquareHole_II_Cfg(PegInHoleEnvCfg):
     """
     这个配置类专门用于“方形插销-任务II”环境。
     它继承自PegInHoleEnvCfg，并覆写了一些参数以适应具体任务需求。
     """
     task= PegInHoleSquareHole_II() # 使用方形插销任务II的具体配置对象
+    task_name: str = task.name
+    episode_length_s = task.duration_s
+    
+@configclass
+class PegInHoleSquareHole_III_Cfg(PegInHoleEnvCfg):
+    """
+    这个配置类专门用于“方形插销-任务III”环境。
+    它继承自PegInHoleEnvCfg，并覆写了一些参数以适应具体任务需求。
+    """
+    task= PegInHoleSquareHole_III() # 使用方形插销任务III的具体配置对象
+    task_name: str = task.name
+    episode_length_s = task.duration_s
+    
+@configclass
+class PegInHoleSquareHole_IV_Cfg(PegInHoleEnvCfg):
+    """
+    这个配置类专门用于“方形插销-任务IV”环境。
+    它继承自PegInHoleEnvCfg，并覆写了一些参数以适应具体任务需求。
+    """
+    task= PegInHoleSquareHole_IV() # 使用方形插销任务IV的具体配置对象
     task_name: str = task.name
     episode_length_s = task.duration_s
     
