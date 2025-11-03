@@ -405,6 +405,174 @@ class PegInHoleSquareHole_II(PegInHoleTask):
     }
     # 采用默认的观测顺序，不需要改动
     
+@configclass
+class SquarePeg_I(HeldAssetCfg):
+    """ 定义一个公差I的方形插销（手持工件） """
+    usd_path = f"{PEG_AND_HOLE_ASSETS_DIR}/square/square_peg_I.usd"
+    # 使用边长作为'diameter'，用于夹爪宽度的计算
+    diameter: float = 0.008
+    # 高度和质量与圆形资产保持一致
+    height: float = 0.050
+    mass: float = 0.019 + 0.005 # 方形插销稍微重一点
+
+@configclass
+class PegInHoleSquareHole_I(PegInHoleTask):
+    """
+    公差II的方形插销插入任务配置
+    """
+    # -- 1. 基本信息 --
+    name = "peg_in_hole_square_I" # 任务名称
+    fixed_asset_cfg = SquareHole()
+    held_asset_cfg = SquarePeg_I()
+    asset_size = 10.0
+    duration_s = 15.0  # 方形任务更难，可以适当增加任务时长
+
+    # -- 随机化参数覆写 --
+    hand_init_orn_noise: list = [0.0, 0.0, 0.785] # 允许在偏航角上有 +/- 45度的随机转动，增大任务难度
+    fixed_asset_init_orn_range_deg: float = 90.0 # 方孔的偏航角随机化范围缩小到15度，避免过大旋转导致任务过难
+    
+    # -- 奖励函数参数覆写 --
+    
+    action_penalty_ee_scale: float = 0.03
+    action_grad_penalty_scale: float = 0.1
+
+    orientation_reward_scale: float = 3.0  # 姿态对齐奖励的权重
+    # 成功完成任务时，允许的最终偏航角误差（弧度）
+    yaw_success_threshold: float = 0.05  # 弧度，约等于2.86度
+    
+    # 正方形有4个对称方向：0, 90, 180, 270 度
+    symmetry_angles_deg: list = [0.0, 90.0, 180.0, 270.0]
+    orientation_coef: list = [5, 4]
+    
+    xy_dist_coef: list = [50, 2]
+    xy_dist_reward_scale: float = 2.0
+    z_dist_coef: list = [20, 4]
+    z_dist_reward_scale: float = 1.0
+    z_reward_activation_threshold: float = 0.0005 # 当x，y平面距离小于0.5mm时，才激活Z轴奖励
+
+    # ================= 奖励函数选择 =================
+    requires_orientation_logic: bool = True
+    use_decoupled_reward: bool = True
+    
+    # ================ 触觉 =================
+    tactile = {
+        "tactile_enabled": False, # 是否启用触觉传感器
+        "use_contact_forces_as_obs": False, # 是否使用接触力作为触觉信息
+    }
+    # 采用默认的观测顺序，不需要改动
+    
+    
+@configclass
+class SquarePeg_III(HeldAssetCfg):
+    """ 定义一个公差III的方形插销（手持工件） """
+    usd_path = f"{PEG_AND_HOLE_ASSETS_DIR}/square/square_peg_III.usd"
+    # 使用边长作为'diameter'，用于夹爪宽度的计算
+    diameter: float = 0.0099
+    # 高度和质量与圆形资产保持一致
+    height: float = 0.050
+    mass: float = 0.019 + 0.005 # 方形插销稍微重一点
+
+@configclass
+class PegInHoleSquareHole_III(PegInHoleTask):
+    """
+    公差II的方形插销插入任务配置
+    """
+    # -- 1. 基本信息 --
+    name = "peg_in_hole_square_III" # 任务名称
+    fixed_asset_cfg = SquareHole()
+    held_asset_cfg = SquarePeg_III()
+    asset_size = 10.0
+    duration_s = 15.0  # 方形任务更难，可以适当增加任务时长
+
+    # -- 随机化参数覆写 --
+    hand_init_orn_noise: list = [0.0, 0.0, 0.785] # 允许在偏航角上有 +/- 45度的随机转动，增大任务难度
+    fixed_asset_init_orn_range_deg: float = 90.0 # 方孔的偏航角随机化范围缩小到15度，避免过大旋转导致任务过难
+    
+    # -- 奖励函数参数覆写 --
+    
+    action_penalty_ee_scale: float = 0.03
+    action_grad_penalty_scale: float = 0.1
+
+    orientation_reward_scale: float = 3.0  # 姿态对齐奖励的权重
+    # 成功完成任务时，允许的最终偏航角误差（弧度）
+    yaw_success_threshold: float = 0.05  # 弧度，约等于2.86度
+    
+    # 正方形有4个对称方向：0, 90, 180, 270 度
+    symmetry_angles_deg: list = [0.0, 90.0, 180.0, 270.0]
+    orientation_coef: list = [5, 4]
+    
+    xy_dist_coef: list = [50, 2]
+    xy_dist_reward_scale: float = 2.0
+    z_dist_coef: list = [20, 4]
+    z_dist_reward_scale: float = 1.0
+    z_reward_activation_threshold: float = 0.0005 # 当x，y平面距离小于0.5mm时，才激活Z轴奖励
+
+    # ================= 奖励函数选择 =================
+    requires_orientation_logic: bool = True
+    use_decoupled_reward: bool = True
+    
+    # ================ 触觉 =================
+    tactile = {
+        "tactile_enabled": False, # 是否启用触觉传感器
+        "use_contact_forces_as_obs": False, # 是否使用接触力作为触觉信息
+    }
+    # 采用默认的观测顺序，不需要改动
+    
+@configclass
+class SquarePeg_IV(HeldAssetCfg):
+    """ 定义一个公差IV的方形插销（手持工件） """
+    usd_path = f"{PEG_AND_HOLE_ASSETS_DIR}/square/square_peg_IV.usd"
+    # 使用边长作为'diameter'，用于夹爪宽度的计算
+    diameter: float = 0.00998
+    # 高度和质量与圆形资产保持一致
+    height: float = 0.050
+    mass: float = 0.019 + 0.005 # 方形插销稍微重一点
+
+@configclass
+class PegInHoleSquareHole_IV(PegInHoleTask):
+    """
+    公差II的方形插销插入任务配置
+    """
+    # -- 1. 基本信息 --
+    name = "peg_in_hole_square_IV" # 任务名称
+    fixed_asset_cfg = SquareHole()
+    held_asset_cfg = SquarePeg_IV()
+    asset_size = 10.0
+    duration_s = 15.0  # 方形任务更难，可以适当增加任务时长
+
+    # -- 随机化参数覆写 --
+    hand_init_orn_noise: list = [0.0, 0.0, 0.785] # 允许在偏航角上有 +/- 45度的随机转动，增大任务难度
+    fixed_asset_init_orn_range_deg: float = 90.0 # 方孔的偏航角随机化范围缩小到15度，避免过大旋转导致任务过难
+    
+    # -- 奖励函数参数覆写 --
+    
+    action_penalty_ee_scale: float = 0.03
+    action_grad_penalty_scale: float = 0.1
+
+    orientation_reward_scale: float = 3.0  # 姿态对齐奖励的权重
+    # 成功完成任务时，允许的最终偏航角误差（弧度）
+    yaw_success_threshold: float = 0.05  # 弧度，约等于2.86度
+    
+    # 正方形有4个对称方向：0, 90, 180, 270 度
+    symmetry_angles_deg: list = [0.0, 90.0, 180.0, 270.0]
+    orientation_coef: list = [5, 4]
+    
+    xy_dist_coef: list = [50, 2]
+    xy_dist_reward_scale: float = 2.0
+    z_dist_coef: list = [20, 4]
+    z_dist_reward_scale: float = 1.0
+    z_reward_activation_threshold: float = 0.0005 # 当x，y平面距离小于0.5mm时，才激活Z轴奖励
+
+    # ================= 奖励函数选择 =================
+    requires_orientation_logic: bool = True
+    use_decoupled_reward: bool = True
+    
+    # ================ 触觉 =================
+    tactile = {
+        "tactile_enabled": False, # 是否启用触觉传感器
+        "use_contact_forces_as_obs": False, # 是否使用接触力作为触觉信息
+    }
+    # 采用默认的观测顺序，不需要改动
 # ================= Peg in hole L Hole =================
 
 @configclass
