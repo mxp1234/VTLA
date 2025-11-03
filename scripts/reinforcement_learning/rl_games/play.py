@@ -103,6 +103,10 @@ def main():
     else:
         resume_path = retrieve_file_path(args_cli.checkpoint)
     log_dir = os.path.dirname(os.path.dirname(resume_path))
+    
+    if hasattr(env_cfg, "evaluation_mode"):
+        # 在创建环境之前，激活评估模式
+        env_cfg.evaluation_mode = True
 
     # wrap around environment for rl-games
     rl_device = agent_cfg["params"]["config"]["device"]
@@ -178,7 +182,18 @@ def main():
             # agent stepping
             actions = agent.get_action(obs, is_deterministic=agent.is_deterministic)
             # env stepping
-            obs, _, dones, _ = env.step(actions)
+            obs, _, dones, infos = env.step(actions)
+            
+            if "eval_printout" in infos:
+                print(infos["eval_printout"], end="") # 使用 end="" 避免额外的换行
+            # --------------------------------
+            
+            # perform operations for terminated episodes
+            if len(dones) > 0:
+                # reset rnn state for terminated episodes
+                if agent.is_rnn and agent.states is not None:
+                    for s in agent.states:
+                        s[:, dones, :] = 0.0
 
             # perform operations for terminated episodes
             if len(dones) > 0:
