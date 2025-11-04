@@ -7,7 +7,7 @@
 ```
 **/**/TacEx/source/tacex_tasks/tacex_tasks
 ```
-其中 factory_version_1 与 factory_version_2 文件夹为实现 peg in hole 任务的两个版本。
+该目录下 **factory_version_1** 与 **factory_version_2** 文件夹为实现 peg in hole 任务的两个版本。
 
 **factory_version_1** 主要聚焦于触觉编码与视觉+触觉策略设计，**factory_version_2** 主要聚焦于奖励函数优化与强化学习算法设计。两套任务版本直接可以迭代共用。后续将引入 **factory_version_3** ，主要聚焦 sim2real 问题的解决。其余任务例如抓取、擦桌子等可参照该
 
