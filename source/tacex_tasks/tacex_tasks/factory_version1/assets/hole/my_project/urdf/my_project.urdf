@@ -1,0 +1,28 @@
+<?xml version="1.0"?>
+<robot name="kitchen_robot_v3">
+  <link name="base_link"/>
+  <link name="L_hole">
+    <visual>
+      <origin xyz="0.000000 0.000000 0.000000" rpy="0.000000 0.000000 0.000000"/>
+      <geometry>
+        <mesh filename="../L_hole.stl"/>
+      </geometry>
+      <material name="L_hole_mat">
+        <color rgba="1.000 1.000 1.000 1.000"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0.000000 0.000000 0.000000" rpy="0.000000 0.000000 0.000000"/>
+      <geometry>
+        <mesh filename="../L_hole.stl"/>
+      </geometry>
+    </collision>
+  </link>
+  <joint name="joint_L_hole" type="revolute">
+    <parent link="base_link"/>
+    <child link="L_hole"/>
+    <origin xyz="0.000000 0.000000 0.000000" rpy="0.000000 -0.000000 0.000000"/>
+    <axis xyz="1.000000 0.000000 0.000000"/>
+    <limit lower="-3.141593" upper="3.141593" effort="0.000000" velocity="0.000000"/>
+  </joint>
+</robot>

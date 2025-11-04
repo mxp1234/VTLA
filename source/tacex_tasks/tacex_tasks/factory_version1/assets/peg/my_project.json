@@ -1,0 +1,109 @@
+{
+  "version": 1,
+  "project_name": "my_project",
+  "auto_color": false,
+  "graph": {
+    "nodes": [
+      {
+        "uid": "0x7fc8b717e3b0",
+        "type": "base",
+        "name": "base_link",
+        "link_name": "base_link",
+        "pos": [
+          0.0,
+          0.0
+        ]
+      },
+      {
+        "uid": "0x7fc8b717ffa0",
+        "type": "part",
+        "name": "L_peg",
+        "link_name": "L_peg",
+        "stl_path": "../L_peg.stl",
+        "pos": [
+          418.1303128713557,
+          2.9896997180145206
+        ]
+      },
+      {
+        "uid": "0x7fc8b717ffd0",
+        "type": "connector",
+        "name": "connector",
+        "pos": [
+          215.6662851747413,
+          -31.904021401929313
+        ],
+        "joint_type": "revolute",
+        "joint_name": "",
+        "joint_angle": 0.0,
+        "offset_xyz": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "offset_rpy": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "joint_limit_lower": -3.141592653589793,
+        "joint_limit_upper": 3.141592653589793,
+        "joint_effort": 0.0,
+        "joint_velocity": 0.0,
+        "joint_default_position": 0.0,
+        "parent_local_xyz": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "parent_local_rpy": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "parent_axis": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "child_local_xyz": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "child_local_rpy": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "child_axis": [
+          1.0,
+          0.0,
+          0.0
+        ],
+        "parent_binding": {
+          "node_uid": "0x7fc8b717e3b0",
+          "point": "root"
+        },
+        "child_binding": {
+          "node_uid": "0x7fc8b717ffa0",
+          "point": "point1"
+        }
+      }
+    ],
+    "connections": [
+      {
+        "from_uid": "0x7fc8b717e3b0",
+        "from_port": "root",
+        "to_uid": "0x7fc8b717ffd0",
+        "to_port": "parent"
+      },
+      {
+        "from_uid": "0x7fc8b717ffd0",
+        "from_port": "child",
+        "to_uid": "0x7fc8b717ffa0",
+        "to_port": "C:point1"
+      }
+    ]
+  }
+}

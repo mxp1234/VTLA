@@ -114,5 +114,11 @@ params:
           concat_input: True
           layer_norm: True
 
+    # Weights & Biases logging
+    wandb_activate: True  # 设为 True 启用 wandb
+    wandb_entity: "2996124754-salesforce"  # 您的 wandb 用户名
+    wandb_project: "isaaclab"  # wandb 项目名称
+    wandb_name: ""  # 运行名称（留空会自动生成）
+
     player:
       deterministic: False

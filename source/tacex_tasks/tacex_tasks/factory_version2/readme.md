@@ -1,6 +1,6 @@
 # Peg-in-hole说明
 
-`factory_version2`是在`factory_version1`的基础上（加入了`TacEx`对夹爪指尖的`GelSight`进行触觉仿真，并利用`TacNet`网络处理原始触觉图像得到三维力信息，并且将其作为观测obs和状态state），结合全新的奖励函数（对齐插入解耦+门控机制）和不同的孔形（圆形、方形、三角形、六边形、L形）后得到了一个更加全面和完善的Peg-in-hole任务RL仿真训练环境。
+`factory_version1`,`factory_version2`均加入了`TacEx`对夹爪指尖的`GelSight`进行触觉仿真，并利用`TacNet`网络处理原始触觉图像得到三维力信息，并且将其作为观测obs和状态state），`factory_version1`与`factory_version2`的env实现略有差异，其中`factory_version2`结合了全新的奖励函数（对齐插入解耦+门控机制）,`factory_version1`结合了新的触觉融合策略.后续将适配不同的孔形（圆形、方形、三角形、六边形、L形），形成一个更加全面和完善的Peg-in-hole任务RL仿真训练环境。
 
 同时考虑到后续可能针对Peg-in-hole任务设计专门的benchmark（涵盖5种孔形，每种孔形若干公差间隙：2mm-0.5mm-0.1mm-0.02mm），所以代码在设计时尽量考虑了可扩展性、非破坏性与孔型管理，尽管这可能导致代码略显冗长。
 
@@ -12,8 +12,8 @@
 | :--: | :---------------------: | :-----------------------------: | :----------------------: | :-----------------------: | :----------------------------------------------------------: |
 |  I   |  peg: 8mm, hole: 10mm   |    peg: 8x8mm, hole: 10x10mm    |   peg: 8mm, hole: 12mm   | peg: 9.690mm, hole: 12mm  |   peg: 13x13mm, a=5mm, b=3mm, hole: 15x15mm, a=7mm, b=5mm    |
 |  II  | peg: 9.5mm, hole: 10mm  |  peg: 9.5x9.5mm, hole: 10x10mm  | peg: 11.0mm, hole: 12mm  | peg: 11.423mm, hole: 12mm | peg: 14.5x14.5mm, a=6.5mm, b=4.5mm, hole: 15x15mm, a=7mm, b=5mm |
-| III  | peg: 9.9mm, hole: 10mm  |  peg: 9.9x9.9mm, hole: 10x10mm  | peg: 11.8mm, hole: 12mm  | peg: 11.884mm, hole: 12mm | peg: 14.9x14.9mm, a=6.9mm, b=4.9mm, hole: 15x15mm, a=7mm, b=5mm |
-|  IV  | peg: 9.98mm, hole: 10mm | peg: 9.98x9.98mm, hole: 10x10mm | peg: 11.96mm, hole: 12mm | peg: 11.976mm, hole: 12mm | peg: 14.98x14.98mm, a=6.98mm, b=4.98mm, hole: 15x15mm, a=7mm, b=5mm |
+| III (公差0.05mm)  | peg: 9.9mm, hole: 10mm  |  peg: 9.9x9.9mm, hole: 10x10mm  | peg: 11.8mm, hole: 12mm  | peg: 11.884mm, hole: 12mm | peg: 14.9x14.9mm, a=6.9mm, b=4.9mm, hole: 15x15mm, a=7mm, b=5mm |
+|  IV (公差0.01mm) | peg: 9.98mm, hole: 10mm | peg: 9.98x9.98mm, hole: 10x10mm | peg: 11.96mm, hole: 12mm | peg: 11.976mm, hole: 12mm | peg: 14.98x14.98mm, a=6.98mm, b=4.98mm, hole: 15x15mm, a=7mm, b=5mm |
 
 上表中不同孔型的几何参数定义如下：
 
@@ -120,11 +120,18 @@ python ./scripts/reinforcement_learning/rl_games/play.py --task Peg-In-Hole-Cric
 
 以下是标准的四步流程：
 
-#### 1. 准备资产 (USD Files)
+#### 1. 准备资产(法一) (USD Files)
 
 *   使用3D建模软件（如Blender, SolidWorks）创建新Peg和Hole模型。
 *   **关键**: 确保模型以**米**为单位，**Z轴朝上**，并将**几何中心**作为模型的原点。
 *   在Isaac Sim中为模型添加物理属性（`Rigid Body`, `Articulation Root`）和碰撞体（`Collider`，推荐使用`SDF`近似），并保存为最终的 `.usd` 文件。
+#### 1.1 准备资产(法二) （FluxWeave）
+
+<img src="./figures/image.png" alt="playsuccess" style="zoom:60%;" />
+
+*   基于该项目配置 https://github.com/DataFlux-Robot/FluxWeave
+*   注意peg与hole资产的原点位置设置，应保证Z高度一致，XY位置对其
+
 
 #### 2. 定义任务配置 (`peg_in_hole_tasks_cfg.py`)
 

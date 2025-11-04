@@ -1,0 +1,109 @@
+{
+  "version": 1,
+  "project_name": "my_project",
+  "auto_color": false,
+  "graph": {
+    "nodes": [
+      {
+        "uid": "0x7f7ae83463b0",
+        "type": "base",
+        "name": "base_link",
+        "link_name": "base_link",
+        "pos": [
+          0.0,
+          0.0
+        ]
+      },
+      {
+        "uid": "0x7f7ae8241660",
+        "type": "part",
+        "name": "L_hole",
+        "link_name": "L_hole",
+        "stl_path": "../L_hole.stl",
+        "pos": [
+          452.8000314734254,
+          7.323414543273238
+        ]
+      },
+      {
+        "uid": "0x7f7ae8241090",
+        "type": "connector",
+        "name": "connector",
+        "pos": [
+          225.7782864336782,
+          1.3211255917209215
+        ],
+        "joint_type": "revolute",
+        "joint_name": "",
+        "joint_angle": 0.0,
+        "offset_xyz": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "offset_rpy": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "joint_limit_lower": -3.141592653589793,
+        "joint_limit_upper": 3.141592653589793,
+        "joint_effort": 0.0,
+        "joint_velocity": 0.0,
+        "joint_default_position": 0.0,
+        "parent_local_xyz": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "parent_local_rpy": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "parent_axis": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "child_local_xyz": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "child_local_rpy": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "child_axis": [
+          1.0,
+          0.0,
+          0.0
+        ],
+        "parent_binding": {
+          "node_uid": "0x7f7ae83463b0",
+          "point": "root"
+        },
+        "child_binding": {
+          "node_uid": "0x7f7ae8241660",
+          "point": "point1"
+        }
+      }
+    ],
+    "connections": [
+      {
+        "from_uid": "0x7f7ae83463b0",
+        "from_port": "root",
+        "to_uid": "0x7f7ae8241090",
+        "to_port": "parent"
+      },
+      {
+        "from_uid": "0x7f7ae8241090",
+        "from_port": "child",
+        "to_uid": "0x7f7ae8241660",
+        "to_port": "C:point1"
+      }
+    ]
+  }
+}

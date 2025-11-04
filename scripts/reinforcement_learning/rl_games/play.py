@@ -32,6 +32,10 @@ parser.add_argument(
     help="When no checkpoint provided, use the last saved model. Otherwise use the best saved model.",
 )
 parser.add_argument("--real-time", action="store_true", default=False, help="Run in real-time, if possible.")
+parser.add_argument("--record-tactile", action="store_true", default=False, 
+                   help="Record tactile data during episodes")
+
+parser.add_argument("--debug", action="store_true", default=False)
 # append AppLauncher cli args
 AppLauncher.add_app_launcher_args(parser)
 # parse the arguments
@@ -107,7 +111,9 @@ def main():
     if hasattr(env_cfg, "evaluation_mode"):
         # 在创建环境之前，激活评估模式
         env_cfg.evaluation_mode = True
-
+    if args_cli.debug:
+        if hasattr(env_cfg, "debug"):
+            env_cfg.debug = True
     # wrap around environment for rl-games
     rl_device = agent_cfg["params"]["config"]["device"]
     clip_obs = agent_cfg["params"]["env"].get("clip_observations", math.inf)
@@ -119,7 +125,7 @@ def main():
     # convert to single-agent instance if required by the RL algorithm
     if isinstance(env.unwrapped, DirectMARLEnv):
         env = multi_agent_to_single_agent(env)
-
+    
     # wrap for video recording
     if args_cli.video:
         video_kwargs = {
