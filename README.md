@@ -5,7 +5,7 @@
 本项目依赖 TacEx - 构建，方便维护公共代码库。
 为运行此项目，请先配置Tacex依赖环境， 核心项目代码位于以下目录
 ```
-/home/pi-zero/isaac-sim/TacEx/source/tacex_tasks/tacex_tasks
+**/**/TacEx/source/tacex_tasks/tacex_tasks
 ```
 其中 factory_version_1 与 factory_version_2 文件夹为实现 peg in hole 任务的两个版本。
 
