@@ -5,7 +5,7 @@
   "graph": {
     "nodes": [
       {
-        "uid": "0x7f7ae83463b0",
+        "uid": "0x7f2e3010a3b0",
         "type": "base",
         "name": "base_link",
         "link_name": "base_link",
@@ -15,23 +15,23 @@
         ]
       },
       {
-        "uid": "0x7f7ae8241660",
+        "uid": "0x7f2e3010b640",
         "type": "part",
         "name": "L_hole",
         "link_name": "L_hole",
         "stl_path": "../L_hole.stl",
         "pos": [
-          452.8000314734254,
-          7.323414543273238
+          458.5783179071037,
+          -7.122301540922507
         ]
       },
       {
-        "uid": "0x7f7ae8241090",
+        "uid": "0x7f2e3010b130",
         "type": "connector",
         "name": "connector",
         "pos": [
-          225.7782864336782,
-          1.3211255917209215
+          227.22285804209787,
+          14.322270067497072
         ],
         "joint_type": "revolute",
         "joint_name": "",
@@ -82,26 +82,26 @@
           0.0
         ],
         "parent_binding": {
-          "node_uid": "0x7f7ae83463b0",
+          "node_uid": "0x7f2e3010a3b0",
           "point": "root"
         },
         "child_binding": {
-          "node_uid": "0x7f7ae8241660",
+          "node_uid": "0x7f2e3010b640",
           "point": "point1"
         }
       }
     ],
     "connections": [
       {
-        "from_uid": "0x7f7ae83463b0",
+        "from_uid": "0x7f2e3010a3b0",
         "from_port": "root",
-        "to_uid": "0x7f7ae8241090",
+        "to_uid": "0x7f2e3010b130",
         "to_port": "parent"
       },
       {
-        "from_uid": "0x7f7ae8241090",
+        "from_uid": "0x7f2e3010b130",
         "from_port": "child",
-        "to_uid": "0x7f7ae8241660",
+        "to_uid": "0x7f2e3010b640",
         "to_port": "C:point1"
       }
     ]

@@ -10,6 +10,7 @@ from isaaclab.utils import configclass
 from isaaclab.utils.assets import ISAACLAB_NUCLEUS_DIR
 from dataclasses import field
 import numpy as np
+from isaaclab.assets import RigidObjectCfg  
 ASSET_DIR = f"{ISAACLAB_NUCLEUS_DIR}/Factory"
 # 本地资产目录
 LOCAL_ASSETS_DIR = os.path.join(os.path.dirname(__file__), "assets")
@@ -83,13 +84,13 @@ class FactoryTask:
     ]
     # --- 奖励参数 ---
     xy_dist_coef: tuple[float, float] = (10.0, 1.0)
-    z_dist_coef: tuple[float, float] = (10.0, 1.0)
+    z_dist_coef: tuple[float, float] = (30.0, 1.0)
     xy_dist_reward_scale: float = 1.0
     z_dist_reward_scale: float = 1.0
 
     orientation_reward_scale: float = 0.5
     yaw_success_threshold: float = float(np.deg2rad(5.0)) # 成功判断用
-    action_penalty_ee_scale: float = 0.03 # 对动作大小的惩罚权重。较大的动作会受到惩罚，鼓励更平滑的控制
+    action_penalty_ee_scale: float = 0.01 # 对动作大小的惩罚权重。较大的动作会受到惩罚，鼓励更平滑的控制
     action_grad_penalty_scale: float = 0.1 # 对动作变化率（梯度）的惩罚权重。鼓励动作的连续性，防止抖动
     
     success_threshold: float = 0.04
@@ -215,6 +216,8 @@ class PegInsert(FactoryTask):
         ),
         actuators={},
     )
+
+    
     held_asset: ArticulationCfg = ArticulationCfg(
         prim_path="/World/envs/env_.*/HeldAsset",
         spawn=sim_utils.UsdFileCfg(
@@ -321,8 +324,8 @@ class PegInsert_L_III(PegInsert):
     use_decoupled_reward = True
     requires_orientation_logic = True
     xy_dist_reward_scale = 1.0
-    z_dist_reward_scale = 2.0
-
+    z_dist_reward_scale = 3.0
+    duration_s = 20
     # 唯一的区别: 使用本地资产而非Nucleus资产
     fixed_asset_cfg = Hole10mmLocal()  # 本地10mm hole
     held_asset_cfg = Peg10mmLocal()    # 本地10mm peg
@@ -357,12 +360,14 @@ class PegInsert_L_III(PegInsert):
     # 重要: 必须重新定义ArticulationCfg以使用新的USD路径
     # 这是因为Python类属性在定义时就会被求值,继承的ArticulationCfg仍然使用父类的usd_path
     fixed_asset: ArticulationCfg = ArticulationCfg(
+    # fixed_asset: RigidObjectCfg = RigidObjectCfg(
         prim_path="/World/envs/env_.*/FixedAsset",
         spawn=sim_utils.UsdFileCfg(
             usd_path=f"{LOCAL_ASSETS_DIR}/hole/my_project/hole.usd",  # 直接使用本地10mm hole的路径
             activate_contact_sensors=True,
             rigid_props=sim_utils.RigidBodyPropertiesCfg(
                 disable_gravity=True,
+                # kinematic_enabled=True,
                 max_depenetration_velocity=5.0,
                 linear_damping=0.0,
                 angular_damping=0.0,
@@ -393,6 +398,7 @@ class PegInsert_L_III(PegInsert):
 #   | 绕Z轴旋转180° | (0.0, 0.0, 0.0, 1.0)       |
 
     held_asset: ArticulationCfg = ArticulationCfg(
+    # fixed_asset: RigidObjectCfg = RigidObjectCfg(
         prim_path="/World/envs/env_.*/HeldAsset",
         spawn=sim_utils.UsdFileCfg(
             usd_path=f"{LOCAL_ASSETS_DIR}/peg/my_project/peg.usd",  # 直接使用本地10mm peg的路径
