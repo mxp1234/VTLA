@@ -9,7 +9,7 @@
 ```
 该目录下 **factory_version_1** 与 **factory_version_2** 文件夹为实现 peg in hole 任务的两个版本。
 
-**factory_version_1** 主要聚焦于触觉编码与视觉+触觉策略设计，**factory_version_2** 主要聚焦于奖励函数优化与强化学习算法设计。两套任务版本直接可以迭代共用。后续将引入 **factory_version_3** ，主要聚焦 sim2real 问题的解决。其余任务例如抓取、擦桌子等可参照该
+**factory_version_1** 主要聚焦于触觉编码与视觉+触觉策略设计，**factory_version_2** 主要聚焦于奖励函数优化与强化学习算法设计。两套任务版本之间可以迭代共用。后续将引入 **factory_version_3** ，主要聚焦 sim2real 问题的解决。其余任务例如抓取、清理桌面等可参照该模板，创建对应的文件夹。
 
 
 ## **Tacex 核心功能**:
@@ -74,7 +74,7 @@ or build a [Docker Container](docs/source/installation/Docker-Container-Setup.md
 
 不同孔的形状对应不同的超参数，例如`rl_games_ppo_circle_cfg.yaml`对应圆形孔，`rl_games_ppo_L_cfg.yaml`对应L形孔。
 
-## 训练方法
+## 训练方法 （以factory version 2 为例）
 
 首先注册环境，在`VLTA`项目文件下，命令行执行以下代码：
 
