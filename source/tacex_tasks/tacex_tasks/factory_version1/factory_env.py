@@ -18,7 +18,7 @@ from isaaclab.envs import DirectRLEnv # DirectRLEnv是强化学习环境的基�
 from isaaclab.sim.spawners.from_files import GroundPlaneCfg, spawn_ground_plane # 用于生成地面的工具
 from isaaclab.utils.assets import ISAAC_NUCLEUS_DIR # Isaac Sim资源库的路径
 from isaaclab.utils.math import axis_angle_from_quat # 从四元数计算轴-角表示
-
+from isaaclab.assets import RigidObjectCfg  #
 from tacex import GelSightSensor # GelSight触觉传感器
 
 from . import factory_control as fc # 导入控制模块
@@ -816,7 +816,8 @@ class FactoryEnv(DirectRLEnv):
             # a. 计算解耦的误差
             xy_dist = torch.linalg.vector_norm(target_held_base_pos[:, 0:2] - held_base_pos[:, 0:2], dim=1)
             z_dist = torch.abs(target_held_base_pos[:, 2] - held_base_pos[:, 2])
-
+            if torch.any(self.reset_buf):
+                self.extras["logs_z_dist"] = z_dist.mean()
             # b. 计算解耦的XY和Z奖励
             xy_coef_a, xy_coef_b = self.cfg_task.xy_dist_coef
             rew_xy_align = factory_utils.squashing_fn(xy_dist, xy_coef_a, xy_coef_b)
@@ -850,7 +851,6 @@ class FactoryEnv(DirectRLEnv):
                     print("min_yaw_error,orientation_mask===",min_yaw_error,orientation_mask)
             else: # 对于不需要方向对齐的任务（圆形），姿态门控始终为1
                 orientation_mask = torch.ones((self.num_envs,), device=self.device)
-            
             # f. 计算其他共享的奖励项
             action_penalty_ee = torch.norm(self.actions, p=2)
             action_grad_penalty = torch.norm(self.actions - self.prev_actions, p=2, dim=-1)

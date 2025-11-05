@@ -172,7 +172,10 @@ python ./scripts/reinforcement_learning/rl_games/play.py --task Peg-In-Hole-Cric
 *   在Isaac Sim中为模型添加物理属性（`Rigid Body`, `Articulation Root`）和碰撞体（`Collider`，推荐使用`SDF`近似），并保存为最终的 `.usd` 文件。
 #### 1.1 准备资产(法二) （FluxWeave）
 
-<img src="./figures/image.png" alt="playsuccess" style="zoom:60%;" />
+<img src="./figures/peg_axis.png" alt="playsuccess" style="zoom:60%;" />
+
+<img src="./figures/hole_axis.png" alt="playsuccess" style="zoom:60%;" />
+
 
 *   基于该项目配置 https://github.com/DataFlux-Robot/FluxWeave
 *   注意peg与hole资产的原点位置设置，应保证Z高度一致，XY位置对齐
