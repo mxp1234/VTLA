@@ -11,7 +11,7 @@ from dataclasses import field
 from tacex_assets import TACEX_ASSETS_DATA_DIR
 from tacex_assets.sensors.gelsight_mini.gsmini_cfg import GelSightMiniCfg
 
-from .peg_in_hole_tasks_cfg import ASSET_DIR, PegInHoleTask, PegInHoleCircleHole_I, PegInHoleCircleHole_test, PegInHoleLHole_III, PegInHoleSquareHole_I, PegInHoleSquareHole_II, PegInHoleSquareHole_III, PegInHoleSquareHole_IV
+from .peg_in_hole_tasks_cfg import ASSET_DIR, PegInHoleTask, PegInHoleCircleHole_I, PegInHoleCircleHole_II, PegInHoleCircleHole_III, PegInHoleCircleHole_IV, PegInHoleCircleHole_test, PegInHoleSquareHole_I, PegInHoleSquareHole_II, PegInHoleSquareHole_III, PegInHoleLHole_I, PegInHoleSquareHole_IV, PegInHoleLHole_II, PegInHoleLHole_III, PegInHoleLHole_IV, PegInHoleTriangleHole_I, PegInHoleTriangleHole_II, PegInHoleTriangleHole_III, PegInHoleTriangleHole_IV, PegInHoleHexagonHole_I, PegInHoleHexagonHole_II, PegInHoleHexagonHole_III, PegInHoleHexagonHole_IV
 
 OBS_DIM_CFG = { #  这个字典定义了“观测（Observation）”中各个组成部分的维度
     "fingertip_pos": 3, # 夹爪指尖中心点的三维坐标 (x, y, z)，所以维度是3
@@ -298,6 +298,36 @@ class PegInHoleCircleHole_I_Cfg(PegInHoleEnvCfg):
     episode_length_s = task.duration_s
     
 @configclass
+class PegInHoleCircleHole_II_Cfg(PegInHoleEnvCfg):
+    """
+    这个配置类专门用于“圆形插销-任务II”环境。
+    它继承自PegInHoleEnvCfg，并覆写了一些参数以适应具体任务需求。
+    """
+    task= PegInHoleCircleHole_II()
+    task_name: str = task.name
+    episode_length_s = task.duration_s
+    
+@configclass
+class PegInHoleCircleHole_III_Cfg(PegInHoleEnvCfg):
+    """
+    这个配置类专门用于“圆形插销-任务III”环境。
+    它继承自PegInHoleEnvCfg，并覆写了一些参数以适应具体任务需求。
+    """
+    task= PegInHoleCircleHole_III()
+    task_name: str = task.name
+    episode_length_s = task.duration_s
+    
+@configclass
+class PegInHoleCircleHole_IV_Cfg(PegInHoleEnvCfg):
+    """
+    这个配置类专门用于“圆形插销-任务IV”环境。
+    它继承自PegInHoleEnvCfg，并覆写了一些参数以适应具体任务需求。
+    """
+    task= PegInHoleCircleHole_IV()
+    task_name: str = task.name
+    episode_length_s = task.duration_s
+    
+@configclass
 class PegInHoleSquareHole_I_Cfg(PegInHoleEnvCfg):
     """
     这个配置类专门用于“方形插销-任务I”环境。
@@ -338,11 +368,121 @@ class PegInHoleSquareHole_IV_Cfg(PegInHoleEnvCfg):
     episode_length_s = task.duration_s
     
 @configclass
+class PegInHoleLHole_I_Cfg(PegInHoleEnvCfg):
+    """
+    这个配置类专门用于“L形插销-任务I”环境。
+    它继承自PegInHoleEnvCfg，并覆写了一些参数以适应具体任务需求。
+    """
+    task= PegInHoleLHole_I() # 使用L形插销任务III的具体配置对象
+    task_name: str = task.name
+    episode_length_s = task.duration_s
+    
+@configclass
+class PegInHoleLHole_II_Cfg(PegInHoleEnvCfg):
+    """
+    这个配置类专门用于“L形插销-任务II”环境。
+    它继承自PegInHoleEnvCfg，并覆写了一些参数以适应具体任务需求。
+    """
+    task= PegInHoleLHole_II() # 使用L形插销任务III的具体配置对象
+    task_name: str = task.name
+    episode_length_s = task.duration_s
+
+@configclass
 class PegInHoleLHole_III_Cfg(PegInHoleEnvCfg):
     """
     这个配置类专门用于“L形插销-任务III”环境。
     它继承自PegInHoleEnvCfg，并覆写了一些参数以适应具体任务需求。
     """
     task= PegInHoleLHole_III() # 使用L形插销任务III的具体配置对象
+    task_name: str = task.name
+    episode_length_s = task.duration_s
+    
+@configclass
+class PegInHoleLHole_IV_Cfg(PegInHoleEnvCfg):
+    """
+    这个配置类专门用于“L形插销-任务IV”环境。
+    它继承自PegInHoleEnvCfg，并覆写了一些参数以适应具体任务需求。
+    """
+    task= PegInHoleLHole_IV() # 使用L形插销任务III的具体配置对象
+    task_name: str = task.name
+    episode_length_s = task.duration_s
+    
+@configclass
+class PegInHoleTriangleHole_I_Cfg(PegInHoleEnvCfg):
+    """
+    这个配置类专门用于“三角形插销-任务I”环境。
+    它继承自PegInHoleEnvCfg，并覆写了一些参数以适应具体任务需求。
+    """
+    task= PegInHoleTriangleHole_I() # 使用三角形插销任务I的具体配置对象
+    task_name: str = task.name
+    episode_length_s = task.duration_s
+
+@configclass
+class PegInHoleTriangleHole_II_Cfg(PegInHoleEnvCfg):
+    """
+    这个配置类专门用于“三角形插销-任务II”环境。
+    它继承自PegInHoleEnvCfg，并覆写了一些参数以适应具体任务需求。
+    """
+    task= PegInHoleTriangleHole_II() # 使用三角形插销任务II的具体配置对象
+    task_name: str = task.name
+    episode_length_s = task.duration_s
+    
+@configclass
+class PegInHoleTriangleHole_III_Cfg(PegInHoleEnvCfg):
+    """
+    这个配置类专门用于“三角形插销-任务III”环境。
+    它继承自PegInHoleEnvCfg，并覆写了一些参数以适应具体任务需求。
+    """
+    task= PegInHoleTriangleHole_III() # 使用三角形插销任务III的具体配置对象
+    task_name: str = task.name
+    episode_length_s = task.duration_s
+    
+@configclass
+class PegInHoleTriangleHole_IV_Cfg(PegInHoleEnvCfg):
+    """
+    这个配置类专门用于“三角形插销-任务IV”环境。
+    它继承自PegInHoleEnvCfg，并覆写了一些参数以适应具体任务需求。
+    """
+    task= PegInHoleTriangleHole_IV() # 使用三角形插销任务IV的具体配置对象
+    task_name: str = task.name
+    episode_length_s = task.duration_s
+    
+@configclass
+class PegInHoleHexagonHole_I_Cfg(PegInHoleEnvCfg):
+    """
+    这个配置类专门用于“六边形插销-任务I”环境。
+    它继承自PegInHoleEnvCfg，并覆写了一些参数以适应具体任务需求。
+    """
+    task= PegInHoleHexagonHole_I() # 使用六边形插销任务I的具体配置对象
+    task_name: str = task.name
+    episode_length_s = task.duration_s
+    
+@configclass
+class PegInHoleHexagonHole_II_Cfg(PegInHoleEnvCfg):
+    """
+    这个配置类专门用于“六边形插销-任务II”环境。
+    它继承自PegInHoleEnvCfg，并覆写了一些参数以适应具体任务需求。
+    """
+    task= PegInHoleHexagonHole_II() # 使用六边形插销任务II的具体配置对象
+    task_name: str = task.name
+    episode_length_s = task.duration_s
+    
+@configclass
+class PegInHoleHexagonHole_III_Cfg(PegInHoleEnvCfg):
+    """
+    这个配置类专门用于“六边形插销-任务III”环境。
+    它继承自PegInHoleEnvCfg，并覆写了一些参数以适应具体任务需求。
+    """
+    task= PegInHoleHexagonHole_III() # 使用六边形插销任务III的具体配置对象
+    task_name: str = task.name
+    episode_length_s = task.duration_s
+    
+@configclass
+class PegInHoleHexagonHole_IV_Cfg(PegInHoleEnvCfg):
+    """
+    这个配置类专门用于“六边形插销-任务IV”环境。
+    它继承自PegInHoleEnvCfg，并覆写了一些参数以适应具体任务需求。
+    """
+    task= PegInHoleHexagonHole_IV() # 使用六边形插销任务IV的具体配置对象
     task_name: str = task.name
     episode_length_s = task.duration_s
