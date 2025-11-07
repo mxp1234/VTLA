@@ -17,11 +17,11 @@
 
 上表中不同孔型的几何参数定义如下：
 
-- 圆形：直径$d$
-- 方形：边长$d$ x 边长$d$
-- 三角形：正三角形的外接圆直径$d$
-- 六边形：正六边形的外接圆直径$d$
-- L形：边长$d$ x 边长$d$，$a$为长边宽度，$b$为窄边宽度
+- 圆形：直径`d`
+- 方形：边长`d` x 边长`d`
+- 三角形：正三角形的外接圆直径`d`
+- 六边形：正六边形的外接圆直径`d`
+- L形：边长`d` x 边长`d`，`a`为长边宽度，`b`为窄边宽度
 
 <img src="./figures/hole_geometry.png" alt="hole_geometry" style="zoom:20%;" />
 
@@ -31,13 +31,15 @@
 
 ## 训练方法
 
+### 基本训练
+
 首先注册环境，在`VLTA`项目文件下，命令行执行以下代码：
 
 ```
 python -m pip install -e source/tacex_tasks
 ```
 
-接着选择是否要使用触觉进行训练，在`VTLA\source\tacex_tasks\tacex_tasks\factory_version2\peg_in_hole_tasks_cfg.py`中找到类`PegInHoleCircleHole_test`，将下面代码中的两处`False`修改为`True`，则可以在观测obs和状态state中使用触觉信息，反之则不采用触觉信息。若只打开了`tactile_enabled`，则会调用处理触觉图像、计算三维力的部分，但是并不会将其应用到obs与state中，此时也可以保存触觉图像：
+接着选择是否要使用触觉进行训练，在`VTLA\source\tacex_tasks\tacex_tasks\factory_version2\peg_in_hole_tasks_cfg.py`中找到类`PegInHoleCircleHole_test`，将下面代码中的两处`False`修改为`True`，则可以在观测obs和状态state中使用触觉信息，反之则不采用触觉信息（**注意**，必须要在训练时传入`--enable_cameras`才能激活视触觉传感器）。若只打开了`tactile_enabled`，则会调用处理触觉图像、计算三维力的部分，但是并不会将其应用到obs与state中，此时也可以保存触觉图像：
 
 ```python
 	tactile = {
@@ -46,15 +48,7 @@ python -m pip install -e source/tacex_tasks
     }
 ```
 
-还要选择使用何种奖励函数，具体而言，有官方原始的”关键点奖励+两阶段课程学习“，还有在此基础上优化后的“对齐插入解耦奖励+门控机制”，与上面选择是否启用触觉类似，在类`PegInHoleCircleHole_test`中，将`use_decoupled_reward: bool = True`改为`False`，则采用官方原始奖励，保持`True`则采用优化后的奖励，关于优化后的奖励的细节，见附录。
-
-执行下面的指令开始训练，该测试任务也即官方的圆形孔任务：
-
-```
-python ./scripts/reinforcement_learning/rl_games/train.py --task Peg-In-Hole-Cricle-test-Tactile-v2 --num_envs 16 --enable_cameras
-```
-
-在触觉模式下（也即`"tactile_enabled": True`），将`VTLA\source\tacex_tasks\tacex_tasks\factory_version2\peg_in_hole_env.py`中的`_get_rewards()`函数中将下面的代码取消注释，则可以在训练过程中保存触觉图像：
+在触觉模式下（也即`"tactile_enabled": True`），将`VTLA\source\tacex_tasks\tacex_tasks\factory_version2\peg_in_hole_env.py`中的`_get_rewards()`函数中将下面的代码取消注释，则可以在训练过程中保存触觉图像（建议**调试时使用**，否则会导致大量保存图片）：
 
 ```python
             # Save tactile images periodically when there is actual contact
@@ -66,7 +60,7 @@ python ./scripts/reinforcement_learning/rl_games/train.py --task Peg-In-Hole-Cri
 
 <img src="./figures/tactile_contract.png" alt="tactile_contract" style="zoom:15%;" />
 
-同样的，也可以采用`--headless`启动无头模式加速训练。在训练过程中，使用TensorBoard可以实时监控训练情况，在新的控制台中，通过以下指令打开TensorBoard：
+同样的，可以采用`--headless`启动无头模式加速训练。在训练过程中，使用TensorBoard可以实时监控训练情况，在**新的控制台**中，通过以下指令打开TensorBoard：
 
 ```
 conda activate env_isaaclab
@@ -74,11 +68,11 @@ conda activate env_isaaclab
 python -m tensorboard.main --logdir E:\code\IsaacLab\VTLA\logs\rl_games\Peg-in-hole\Circle_test\summaries
 ```
 
-执行上述代码启动TensorBoard后，在本地端口`http://localhost:6006/`监看。上述路径中的`Peg-in-hole`和`Circle_test`均是在圆形孔的超参数`rl_games_ppo_circle_cfg.yaml`中定义的，针对不同训练任务可以修改具体的实验名称，例如`Circle_I`、`Circle_IV`等，不同实验名称的结果会以相同的文件夹名称保存在`VTLA\logs\rl_games\Peg-in-hole\`文件夹中，保证了训练记录便于整理、可追溯。TensorBoard效果如下图，其中还包括各个子项奖励的变化、训练超参数的变化等曲线：
+执行上述代码启动TensorBoard后，在本地端口`http://localhost:6006/`监看。上述路径中的`Peg-in-hole`和`Circle_test`均是在圆形孔的超参数`rl_games_ppo_circle_cfg.yaml`中定义的，针对不同训练任务可以修改具体的实验名称，例如`Circle_I_keypoints`、`Circle_IV_decoupled_w_tac`等，不同实验名称的结果会以相同的文件夹名称保存在`VTLA\logs\rl_games\Peg-in-hole\`文件夹中，保证了训练记录便于整理、可追溯。TensorBoard效果如下图，其中还包括各个子项奖励的变化、训练超参数的变化等曲线：
 
 <img src="./figures/tensorboard.png" alt="tensorboard" style="zoom:60%;" />
 
-训练结束后，可以使用下方指令加载检查点进行推理播放：
+训练结束后，可以使用下方指令加载奖励最高的检查点（亦可以加载最后一个检查点）进行推理播放：
 
 ```
 python ./scripts/reinforcement_learning/rl_games/play.py --task Peg-In-Hole-Cricle-test-Tactile-v2 --num_envs 16 --enable_cameras --checkpoint E:\code\IsaacLab\VTLA\logs\rl_games\Peg-in-hole\Circle_test\nn\Peg-in-hole.pth
@@ -89,6 +83,84 @@ python ./scripts/reinforcement_learning/rl_games/play.py --task Peg-In-Hole-Cric
 <img src="./figures/play_sim.png" alt="play_sim" style="zoom:60%;" />
 
 <img src="./figures/play_success.png" alt="playsuccess" style="zoom:60%;" />
+
+### 解耦奖励
+
+可以选择使用何种奖励函数，具体而言，有官方原始的”关键点奖励+两阶段课程学习“（简称**关键点奖励**），还有在此基础上优化后的“对齐插入解耦奖励+门控机制”（简称**解耦奖励）**。与上面选择是否启用触觉类似，在`peg_in_hole_tasks_cfg.py`文件中的类`PegInHoleCircleHole_test`，将`use_decoupled_reward: bool = True`改为`False`，则采用关键点奖励，反正若保持`True`则采用解耦奖励，关于优解耦的细节，参见附录。
+
+在训练前，请先设置相关参数。在`peg_in_hole_tasks_cfg.py`文件中的类`PegInHoleCircleHole_test`中，继承并且覆盖了任务基类`PegInHoleTask`的一系列参数定义（包括peg、hole和机械臂EE的**域随机化**，**奖励函数**参数，是否采用解耦奖励，是否采用触觉模式和触觉观测等）。
+
+针对每一次独立的训练，需要在RL算法配置`.yaml`文件中修改对应的任务名、训练轮数、学习率等参数，任务名称会在`VTLA\logs\rl_games\Peg-in-hole\`目录下以**相同名称**创建文件夹，其中包含训练的检查点、日志等信息：
+
+```yaml
+config:
+    name: Peg-in-hole
+    device: cuda:0
+    full_experiment_name: Circle_IV # 在这里修改任务名称，如Circle_IV_keypoints_curriculum_2_w_tac，代表圆形IV公差+关键点奖励+课程学习2阶段+触觉观测
+    ...
+    num_actors: 128
+    reward_shaper:
+      scale_value: 1.0
+    normalize_advantage: True
+    gamma: 0.995
+    tau: 0.95
+    learning_rate: 1e-4 # 学习率
+    lr_schedule: adaptive
+    schedule_type: standard
+    kl_threshold: 0.008
+    score_to_win: 20000
+    max_epochs: 400 # 训练轮数
+```
+
+执行下面的指令开始训练，该测试任务也即官方的圆形孔任务：
+
+```
+python ./scripts/reinforcement_learning/rl_games/train.py --task Peg-In-Hole-Cricle-test-Tactile-v2 --num_envs 16 --enable_cameras
+```
+
+注意，如果不采用触觉模式和触觉观测，则可以不设置`--enable_cameras`，这样能够显著加快训练进度。
+
+### 课程学习
+
+课程学习（Curriculum Learning）是指在训练的初期，降低任务的难度，以加快agent学习的效果，并且随着训练的进行，逐渐增加任务的难度，循序渐进的让agent学会更加复杂困难的任务。
+
+在测试过程中发现关键点奖励存在以下问题：若把`peg_in_hole_utils.py`文件中`get_target_held_base_pose()`函数的`fixed_success_pos_local[:, 2]`（也即目标点`z`轴高度）设置为`0.0`，那么对比比较困难的任务，agent还有可能学不会插入，它会“另辟蹊径”，直接从hole的侧面斜向下插入，推测是这样子能够最大化奖励。为了解决该问题，除了使用**解耦奖励**外，也可以采用课程学习的思路，分两个阶段训练。
+
+**第一阶段**：将上述`fixed_success_pos_local[:, 2]`设置为`0.02`，也即目标点在hole的顶部，在对应孔形的`.yaml`文件中设置任务名称`full_experiment_name`和`max_epochs`：
+
+```yaml
+config:
+    name: Peg-in-hole
+    device: cuda:0
+    full_experiment_name: Circle_IV_keypoints_curriculum_1
+    ...
+    max_epochs: 400 # 第一阶段训练400轮
+```
+
+正常启动训练：
+
+```
+python ./scripts/reinforcement_learning/rl_games/train.py --task Peg-In-Hole-Circle-IV-Tactile-v2 --num_envs 128 --headless
+```
+
+**第二阶段**：将上述`fixed_success_pos_local[:, 2]`设置为`0.0`，也即目标点在hole的底部，我们真正希望它插入的地方。在对应孔形的`.yaml`文件中设置任务名称`full_experiment_name`和`max_epochs`，这里**需要注意**，`max_epochs`必须比一阶段的多，且多出的部分才是第二阶段实际训练的轮数：
+
+```yaml
+config:
+    name: Peg-in-hole
+    device: cuda:0
+    full_experiment_name: Circle_IV_keypoints_curriculum_2
+    ...
+    max_epochs: 800 # 第二阶段也训练400轮
+```
+
+加载**一阶段的检查点**开始二阶段训练，将检查点的路径改成实际的路径，保持`--task`和一阶段一致：
+
+```
+python ./scripts/reinforcement_learning/rl_games/train.py --task Peg-In-Hole-Circle-IV-Tactile-v2 --num_envs 128 --headless --checkpoint "E:\code\IsaacLab\VTLA\logs\rl_games\Peg-in-hole\Circle_IV_keypoints_curriculum_1\nn\Peg-in-hole.pth"
+```
+
+以上是简易课程学习的示例，训练完成后，在在`VTLA\logs\rl_games\Peg-in-hole\`目录下将会存在`Circle_IV_keypoints_curriculum_1`和`Circle_IV_keypoints_curriculum_2`，分别对应两个阶段训练的结果。
 
 ## 代码框架
 
@@ -166,8 +238,10 @@ class PegInHoleHexagonHole_III_Cfg(PegInHoleEnvCfg):
 
 ## TODO
 
-- [ ] 目前仅测试了未启用触觉模式和触觉观测，采用解耦奖励，使用官方的圆形peg与hole资产进行训练。1. 启用触觉模式和触觉观测的完整训练、2. 采用原始关键点奖励的完整训练、3. 采用不同资产（对应不同任务）的完整训练，尚未进行测试。
-- [ ] 目前只在`assets\circle\`文件夹加入了官方的hole和peg资产`circle_hole_test.usd`与`circle_peg_test.usd`作为测试使用，尚未添加其余20种（5孔形 x 4公差等级）后续benchmark中需要用到的资产。 
+- [x] 目前只在`assets\circle\`文件夹加入了官方的hole和peg资产`circle_hole_test.usd`与`circle_peg_test.usd`作为测试使用，尚未添加其余20种（5孔形 x 4公差等级）后续benchmark中需要用到的资产。 
+- [ ] 针对极小公差（IV）的任务，寻找能够有效提高其成功率的奖励函数、观测和状态设计，考虑如何有效利用触觉信息。
+- [ ] 如何进行Sim2Real迁移？
+- [ ] 加工benchmark中资产的实物，以供实验。
 - [ ] 其他……
 
 ## 附录
