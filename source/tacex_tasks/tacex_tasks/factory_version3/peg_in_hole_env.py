@@ -132,9 +132,8 @@ class PegInHoleEnv(DirectRLEnv):
         self._robot = Articulation(self.cfg.robot)
         self._fixed_asset = Articulation(self.cfg_task.fixed_asset)
         # self._held_asset = Articulation(self.cfg_task.held_asset)
-        '''测试'''
 
-        self._held_asset = RigidObject(self.cfg.held_asset) # TODO
+        self._held_asset = RigidObject(self.cfg.held_asset) # TODO held asset 在env_cfg中构建,改为rigid body（这是启用marker motion的必要条件）
 
         # 将创建好的物体（Articulation对象）注册到场景管理器中，方便后续统一管理和数据读取
         self.scene.articulations["robot"] = self._robot

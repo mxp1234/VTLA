@@ -146,8 +146,7 @@ class PegInHoleTask:
     # ================ 仿真对象生成配置 =================
     # -- 仿真对象生成配置 --
     fixed_asset: ArticulationCfg = field(default=None, init=False)
-    # held_asset: ArticulationCfg = field(default=None, init=False)
-    # held_asset: RigidObjectCfg = field(default=None, init=False)
+
     
     def __post_init__(self):
         """
@@ -180,36 +179,6 @@ class PegInHoleTask:
             ),
             actuators={},
         )
-
-        # # --- 为 held_asset (Peg) 构建配置 ---
-        # self.held_asset = RigidObjectCfg(
-        # prim_path="/World/envs/env_.*/HeldAsset/mesh",
-        # spawn=sim_utils.UsdFileCfg(
-        #     usd_path=self.held_asset_cfg.usd_path,
-        #     activate_contact_sensors=True,
-        #     # 质量与碰撞来自你的 held_asset_cfg
-        #     mass_props=sim_utils.MassPropertiesCfg(mass=self.held_asset_cfg.mass),
-        #     collision_props=sim_utils.CollisionPropertiesCfg(contact_offset=0.005, rest_offset=0.0),
-        #     rigid_props=sim_utils.RigidBodyPropertiesCfg(
-        #         max_depenetration_velocity=5.0,
-        #         linear_damping=0.0,
-        #         angular_damping=0.0,
-        #         max_linear_velocity=1000.0,
-        #         max_angular_velocity=3666.0,
-        #         enable_gyroscopic_forces=True,
-        #         solver_position_iteration_count=192,
-        #         solver_velocity_iteration_count=1,
-        #         max_contact_impulse=1e32,
-        #     ),
-        # ),
-        # init_state=RigidObjectCfg.InitialStateCfg(
-        #     pos=(0.0, 0.4, 0.1),
-        #     rot=(1.0, 0.0, 0.0, 0.0),
-        #     lin_vel=(0.0, 0.0, 0.0),
-        #     ang_vel=(0.0, 0.0, 0.0),
-        # ),
-        # )
-
 
 
     #     self.held_asset = ArticulationCfg(

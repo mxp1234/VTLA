@@ -170,12 +170,7 @@ class PegInHoleEnvCfg(DirectRLEnvCfg):
     )
     
     # --- 场景（Scene）配置 ---
-    # scene: InteractiveSceneCfg = InteractiveSceneCfg(
-    #     num_envs=128, # 并行环境的数量，即同时训练128个机器人
-    #     env_spacing=2.0, # 每个环境中心点之间的距离
-    #     # clone_in_fabric=True # 是否在Fabric（Isaac Sim的数据后端）中克隆，可以提高效率
-    #     ) 
-    
+
     scene: InteractiveSceneCfg = field(
         default_factory=lambda: InteractiveSceneCfg(
             num_envs=128,
@@ -183,15 +178,6 @@ class PegInHoleEnvCfg(DirectRLEnvCfg):
             # 注意：这里我们默认不设置 clone_in_fabric
         )
     )
-    # camera_cfg = CameraCfg(
-    #             prim_path = "/World/envs/env_0/Camera",
-    #             offset=CameraCfg.OffsetCfg(pos=(0.5, 0.0, 0.5), rot=(0.5, -0.5, 0.5,- 0.5), convention="world"),
-    #             update_period=0,        # 每一帧更新
-    #             height=480,
-    #             width=480,
-    #             data_types=["rgb"],     # 只要 RGB
-    #             spawn = None
-    #         )
 
     tiled_camera: TiledCameraCfg = TiledCameraCfg(
             prim_path="/World/envs/env0/Camera",
@@ -307,7 +293,6 @@ class PegInHoleEnvCfg(DirectRLEnvCfg):
                 source_frame_offset=OffsetCfg(
                     # rot=(0.0, 0.92388, -0.38268, 0.0) # values for the robot used here
                 ),
-                # target_frames=[FrameTransformerCfg.FrameCfg(prim_path="/World/envs/env_.*/HeldAsset")],
                 target_frames=[FrameTransformerCfg.FrameCfg(prim_path="/World/envs/env_.*/HeldAsset/square_peg_10mm")],
                 debug_vis=False,
             ),
