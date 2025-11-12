@@ -20,14 +20,14 @@ INSTALL_REQUIRES = [
     #     "torch_scatter @"
     #     " https://data.pyg.org/whl/torch-2.5.0%2Bcu118/torch_scatter-2.1.2%2Bpt25cu118-cp310-cp310-linux_x86_64.whl"
     # ),
-    (  # needed for gpu taxim
-        "torch_scatter @"
-        "https://data.pyg.org/whl/torch-2.8.0%2Bcu128/torch_scatter-2.1.2%2Bpt28cu128-cp310-cp310-linux_x86_64.whl"
-    ),
-    # (  # needed for gpu taxim -> for Isaac 5.0
+    # (  # needed for gpu taxim
     #     "torch_scatter @"
-    #     "https://data.pyg.org/whl/torch-2.8.0%2Bcu128/torch_scatter-2.1.2%2Bpt28cu128-cp311-cp311-linux_x86_64.whl"
+    #     "https://data.pyg.org/whl/torch-2.8.0%2Bcu128/torch_scatter-2.1.2%2Bpt28cu128-cp310-cp310-linux_x86_64.whl"
     # ),
+    (  # needed for gpu taxim -> for Isaac 5.0
+        "torch_scatter @"
+        "https://data.pyg.org/whl/torch-2.8.0%2Bcu128/torch_scatter-2.1.2%2Bpt28cu128-cp311-cp311-linux_x86_64.whl"
+    ),
     "psutil",
     "nvidia-ml-py",
     "pre-commit",

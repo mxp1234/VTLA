@@ -15,7 +15,7 @@ from isaaclab.utils import configclass # 配置类装饰器
 from tacex_assets import TACEX_ASSETS_DATA_DIR # TacEx资源数据目录
 from tacex_assets.sensors.gelsight_mini.gsmini_cfg import GelSightMiniCfg # GelSight Mini传感器配置类
 
-from .factory_tasks_cfg import FactoryTask, GearMesh, NutThread, PegInsert, PegInsert_L_III # 任务配置类
+from .factory_tasks_cfg import FactoryTask, GearMesh, NutThread, PegInsert_L_III # 任务配置类
 
 # -- 观测空间维度配置字典 --
 # 定义了"观测(Observation)"中各个组成部分的维度
@@ -272,15 +272,8 @@ class FactoryTestPegInsertCfg(FactoryEnvCfg):
 
     # 回合长度 (秒)
     # 测试时可以设置更长,便于观察初始化过程
-    episode_length_s = 15.0  # 15秒
+    episode_length_s = task.duration_s
 
-    # 场景配置
-    # 测试时建议只用1个环境,便于观察
-    # scene.num_envs = 1  # 在实例化后设置,这里定义的是默认值
-    # 注意: num_envs需要在环境创建时通过命令行参数或代码指定
-
-    # 观测空间和状态空间保持默认 (从FactoryEnvCfg继承)
-    # observation_space和state_space会根据obs_order和state_order自动计算
 
 
 @configclass
@@ -354,7 +347,7 @@ class FactoryTestPegInsertNoRandomCfg(FactoryEnvCfg):
 @configclass
 class FactoryTaskPegInsertCfg(FactoryEnvCfg):
     task_name = "peg_insert"
-    task = PegInsert()
+    task = FactoryTask()
     episode_length_s = 10.0
 
 

@@ -200,7 +200,7 @@ class FactoryEnvCfg(DirectRLEnvCfg):
         debug_vis=True,  # for rendering sensor output in the gui
         # update Taxim cfg
         marker_motion_sim_cfg=None,
-        data_types=["tactile_rgb"],  # marker_motion
+
     )
     # settings for optical sim
     gsmini_left.optical_sim_cfg = gsmini_left.optical_sim_cfg.replace(

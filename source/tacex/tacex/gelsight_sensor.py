@@ -370,7 +370,7 @@ class GelSightSensor(SensorBase):
             self._get_camera_depth()
 
         if "camera_rgb" in self._data.output:
-            self._data.output["camera_rgb"][:] = self.camera.data.output["rgb"]
+            self._data.output["camera_rgb"][:] = self.camera.data.output["camera_rgb"]
 
         if (self.optical_simulator is not None) and ("tactile_rgb" in self.cfg.data_types):
             # self.optical_simulator.height_map = self._data.output["height_map"]

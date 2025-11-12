@@ -203,7 +203,9 @@ def main(env_cfg: ManagerBasedRLEnvCfg | DirectRLEnvCfg | DirectMARLEnvCfg, agen
         )
         wandb.config.update({"env_cfg": env_cfg.to_dict()})
         wandb.config.update({"agent_cfg": agent_cfg})
-
+        if os.path.exists("/home/pi-zero/isaac-sim/TacEx/source/tacex_tasks/tacex_tasks/factory_version3/peg_in_hole_env_cfg.py"):
+            wandb.save("/home/pi-zero/isaac-sim/TacEx/source/tacex_tasks/tacex_tasks/factory_version3/peg_in_hole_env_cfg.py") 
+            wandb.save("/home/pi-zero/isaac-sim/TacEx/source/tacex_tasks/tacex_tasks/factory_version3/peg_in_hole_tasks_cfg.py")
     if args_cli.checkpoint is not None:
         runner.run({"train": True, "play": False, "sigma": train_sigma, "checkpoint": resume_path})
     else:

@@ -33,66 +33,66 @@ class FactoryEnv(DirectRLEnv):
     继承自DirectRLEnv,利用Isaac Lab的强化学习环境框架,根据具体任务需求进行扩展。
     """
     cfg: FactoryEnvCfg # 环境的配置对象,类型是FactoryEnvCfg
-
-    def __init__(self, cfg: FactoryEnvCfg, render_mode: str | None = None, **kwargs):
+    def _setup_scene(self):
         """
-        构造函数,初始化Factory任务环境。
-
-        Args:
-            cfg (FactoryEnvCfg): 任务环境的配置对象,包含了所有可调参数
-            render_mode: 渲染模式
-            **kwargs: 其他参数
+        初始化仿真场景。
+        这个函数会在环境初始化时被框架自动调用,负责创建地面、桌子、机器人、工件和传感器。
         """
-        # -- 动态计算观测/状态空间维度 --
-        # env配置文件包含task实例，task cfg定义了观测与状态空间
-        # 从env配置文件中读取obs_order和state_order列表,然后从OBS_DIM_CFG字典中查找每个条目的维度并求和
-        
-        cfg.observation_space = sum([OBS_DIM_CFG[obs] for obs in cfg.task.obs_order])
-        cfg.state_space = sum([STATE_DIM_CFG[state] for state in cfg.task.state_order])
-        # 加上动作空间的维度=6,因为"上一时刻的动作"(prev_actions)也是观测和状态的一部分
-        cfg.observation_space += cfg.action_space
-        cfg.state_space += cfg.action_space
-        # 将任务相关的具体配置保存为一个独立的属性,方便后续访问
-        self.cfg_task = cfg.task
+        # -- 生成地面 --
+        # 在世界坐标系的/World/ground路径下创建一个地面,位置在Z=-1.05米
+        spawn_ground_plane(prim_path="/World/ground", cfg=GroundPlaneCfg(), translation=(0.0, 0.0, -1.05))
 
-        # 调用父类(DirectRLEnv)的构造函数,完成Isaac Lab环境框架的初始化
-        super().__init__(cfg, render_mode, **kwargs)
+        # -- 加载桌子模型 --
+        # 从Isaac Nucleus资源库加载一个USD格式的桌子模型
+        cfg = sim_utils.UsdFileCfg(usd_path=f"{ISAAC_NUCLEUS_DIR}/Props/Mounts/SeattleLabTable/table_instanceable.usd")
+        # 将桌子生成到场景中,使用正则表达式路径以支持多环境克隆
+        # translation: 桌子的位置; orientation: 桌子的姿态(四元数,表示绕Y轴旋转90度)
+        cfg.func(
+            "/World/envs/env_.*/Table", cfg, translation=(0.55, 0.0, 0.0), orientation=(0.70711, 0.0, 0.0, 0.70711)
+        )
 
-        # -- 初始化额外的物理属性和内部张量 --
-        # 调用工具函数,为机器人连杆的惯性矩阵添加一个小的偏置(armature),以提高仿真稳定性
-        self._set_body_inertias()
-        # 初始化所有需要的张量(用于存储状态、控制目标等)
-        self._init_tensors()
-        # 设置默认的控制器增益、摩擦力等动力学参数
-        self._set_default_dynamics_parameters()
-        # 计算中间值(如雅可比矩阵、速度等),确保所有状态都是最新的
-        self._compute_intermediate_values(dt=self.physics_dt)
-        if self.cfg_task.tactile_enabled_in_obs == True and self.cfg_task.tactile_encode_method == "tactile_force_field":
-            # -- 创建触觉图像保存目录 --
-            # 用于可视化和调试GelSight传感器的输出
-            self.tactile_img_save_dir = os.path.join(os.getcwd(), "tactile_images")
-            os.makedirs(self.tactile_img_save_dir, exist_ok=True)
+        # -- 创建机器人和工件 --
+        # 这里的self.cfg.robot, self.cfg_task.fixed_asset等是在配置文件中定义的ArticulationCfg对象
+        # Isaac Lab框架会解析这些配置对象,并在仿真中创建出对应的物体
+        self._robot = Articulation(self.cfg.robot) # Franka机器人
+        self._fixed_asset = Articulation(self.cfg_task.fixed_asset) # 固定工件(如插孔、螺栓等)
+        # print(self._fixed_asset.init_state)
+        print("="*80)
+        print(self.cfg_task.held_asset)
+        print(self.cfg_task.held_asset.spawn.usd_path)
+        self._held_asset = Articulation(self.cfg_task.held_asset) # 手持工件(如插销、螺母等)
 
-            # 触觉图像保存计数器和保存间隔
-            self.tactile_save_counter = 0
-            self.tactile_save_interval = 100  # 每100步保存一次触觉图像
 
-            # -- 初始化触觉力场特征提取器 --
-            # 加载预训练的神经网络模型,用于从触觉图像提取力场特征
-            checkpoint_path = os.path.join(
-                os.path.dirname(__file__),
-                "network/last.ckpt"
-            )
-            print(f"[FactoryEnv] Loading tactile feature extractor from: {checkpoint_path}")
-            self.tactile_extractor = create_tactile_encoder(
-                encoder_type='force_field', # 使用力场特征提取器
-                checkpoint_path=checkpoint_path, # 预训练模型路径
-                device=self.device, # 使用与环境相同的设备(CPU/GPU)
-                freeze_model=True # 冻结模型参数,不进行训练
-            )
-            print(f"[FactoryEnv] Tactile feature extractor loaded. Output dim: {self.tactile_extractor.get_output_dim()}")
 
-        # TODO 完善后续逻辑部分
+        # -- 克隆环境并添加到场景中 --
+        # 这一步会根据scene.num_envs的设置(如128),将刚刚创建的单个环境(env_0)复制127份
+        self.scene.clone_environments(copy_from_source=False)
+        # 在CPU模式下需要手动设置碰撞过滤规则
+        if self.device == "cpu":
+            self.scene.filter_collisions()
+
+        # -- 将创建好的物体注册到场景管理器中 --
+        # 方便后续统一管理和数据读取
+        self.scene.articulations["robot"] = self._robot
+        self.scene.articulations["fixed_asset"] = self._fixed_asset
+        self.scene.articulations["held_asset"] = self._held_asset
+        if self.cfg_task.name == "gear_mesh":
+            self.scene.articulations["small_gear"] = self._small_gear_asset
+            self.scene.articulations["large_gear"] = self._large_gear_asset
+
+        # -- 创建并注册触觉传感器 --
+        # 左右两个GelSight Mini传感器分别安装在Franka夹爪的两个指尖上
+        self.gsmini_left = GelSightSensor(self.cfg.gsmini_left)
+        self.scene.sensors["gsmini_left"] = self.gsmini_left
+
+        self.gsmini_right = GelSightSensor(self.cfg.gsmini_right)
+        self.scene.sensors["gsmini_right"] = self.gsmini_right
+
+        # -- 添加光源 --
+        # 创建一个穹顶光(Dome Light)用于场景照明
+        light_cfg = sim_utils.DomeLightCfg(intensity=2000.0, color=(0.75, 0.75, 0.75))
+        light_cfg.func("/World/Light", light_cfg)
+
 
     def _set_body_inertias(self):
         """
@@ -136,28 +136,10 @@ class FactoryEnv(DirectRLEnv):
 
         # -- 设置物理材质属性 --
         # 根据配置为手持工件、固定工件和机器人设置摩擦系数
-        self._set_friction(self._held_asset, self.cfg_task.held_asset_cfg.friction)
-        self._set_friction(self._fixed_asset, self.cfg_task.fixed_asset_cfg.friction)
-        self._set_friction(self._robot, self.cfg_task.robot_cfg.friction)
+        factory_utils.set_friction(self._held_asset, self.cfg_task.held_asset_cfg.friction, self.scene.num_envs)
+        factory_utils.set_friction(self._fixed_asset, self.cfg_task.fixed_asset_cfg.friction, self.scene.num_envs)
+        factory_utils.set_friction(self._robot, self.cfg_task.robot_cfg.friction, self.scene.num_envs)
 
-    def _set_friction(self, asset, value):
-        """
-        更新给定资产的材质属性,主要是摩擦系数。
-
-        Args:
-            asset: 要设置摩擦力的资产(Articulation对象)
-            value: 摩擦系数值(同时应用于静摩擦和动摩擦)
-        """
-        # 获取资产当前的材质属性
-        materials = asset.root_physx_view.get_material_properties()
-        # 设置静摩擦系数 (materials的第0维)
-        materials[..., 0] = value  # Static friction.
-        # 设置动摩擦系数 (materials的第1维)
-        materials[..., 1] = value  # Dynamic friction.
-        # 获取所有环境的ID
-        env_ids = torch.arange(self.scene.num_envs, device="cpu")
-        # 将新的材质属性应用到所有环境
-        asset.root_physx_view.set_material_properties(materials, env_ids)
 
     def _init_tensors(self):
         """
@@ -230,7 +212,7 @@ class FactoryEnv(DirectRLEnv):
         # -- 关键点张量 --
         # 关键点是沿着工件轴线均匀分布的点,用于计算更细粒度的对齐奖励
         # 获取关键点偏移(在工件局部坐标系中)
-        offsets = self._get_keypoint_offsets(self.cfg_task.num_keypoints)
+        offsets = factory_utils.get_keypoint_offsets(self.cfg_task.num_keypoints, self.device)
         # 缩放关键点偏移
         self.keypoint_offsets = offsets * self.cfg_task.keypoint_scale
         # 手持工件上的关键点在世界坐标系中的位置
@@ -252,83 +234,66 @@ class FactoryEnv(DirectRLEnv):
         self.ep_succeeded = torch.zeros((self.num_envs,), dtype=torch.long, device=self.device)
         # 记录首次成功的时间步
         self.ep_success_times = torch.zeros((self.num_envs,), dtype=torch.long, device=self.device)
-
-    def _get_keypoint_offsets(self, num_keypoints):
+    def __init__(self, cfg: FactoryEnvCfg, render_mode: str | None = None, **kwargs):
         """
-        获取均匀分布在单位长度线段上的关键点偏移。
-        这些关键点以0为中心,沿着Z轴分布,用于计算精细的对齐奖励。
+        构造函数,初始化Factory任务环境。
 
         Args:
-            num_keypoints: 关键点的数量
-
-        Returns:
-            关键点偏移张量,shape: [num_keypoints, 3]
+            cfg (FactoryEnvCfg): 任务环境的配置对象,包含了所有可调参数
+            render_mode: 渲染模式
+            **kwargs: 其他参数
         """
-        # 初始化关键点偏移张量(全零)
-        keypoint_offsets = torch.zeros((num_keypoints, 3), device=self.device)
-        # 在Z轴上生成均匀分布的点,范围从0到1,然后减0.5使其以0为中心
-        # 例如,如果num_keypoints=5,则点位于[-0.5, -0.25, 0, 0.25, 0.5]
-        keypoint_offsets[:, -1] = torch.linspace(0.0, 1.0, num_keypoints, device=self.device) - 0.5
+        # -- 动态计算观测/状态空间维度 --
+        # env配置文件包含task实例，task cfg定义了观测与状态空间
+        # 从env配置文件中读取obs_order和state_order列表,然后从OBS_DIM_CFG字典中查找每个条目的维度并求和
+        
+        cfg.observation_space = sum([OBS_DIM_CFG[obs] for obs in cfg.task.obs_order])
+        cfg.state_space = sum([STATE_DIM_CFG[state] for state in cfg.task.state_order])
+        # 加上动作空间的维度=6,因为"上一时刻的动作"(prev_actions)也是观测和状态的一部分
+        cfg.observation_space += cfg.action_space
+        cfg.state_space += cfg.action_space
+        # 将任务相关的具体配置保存为一个独立的属性,方便后续访问
+        self.cfg_task = cfg.task
 
-        return keypoint_offsets
+        # 调用父类(DirectRLEnv)的构造函数,完成Isaac Lab环境框架的初始化
+        super().__init__(cfg, render_mode, **kwargs)
 
-    def _setup_scene(self):
-        """
-        初始化仿真场景。
-        这个函数会在环境初始化时被框架自动调用,负责创建地面、桌子、机器人、工件和传感器。
-        """
-        # -- 生成地面 --
-        # 在世界坐标系的/World/ground路径下创建一个地面,位置在Z=-1.05米
-        spawn_ground_plane(prim_path="/World/ground", cfg=GroundPlaneCfg(), translation=(0.0, 0.0, -1.05))
+        # -- 初始化额外的物理属性和内部张量 --
+        # 调用工具函数,为机器人连杆的惯性矩阵添加一个小的偏置(armature),以提高仿真稳定性
+        self._set_body_inertias()
+        # 初始化所有需要的张量(用于存储状态、控制目标等)
+        self._init_tensors()
+        # 设置默认的控制器增益、摩擦力等动力学参数
+        self._set_default_dynamics_parameters()
+        # 计算中间值(如雅可比矩阵、速度等),确保所有状态都是最新的
+        self._compute_intermediate_values(dt=self.physics_dt)
+        if self.cfg_task.tactile_enabled_in_obs == True and self.cfg_task.tactile_encode_method == "tactile_force_field":
+            # -- 创建触觉图像保存目录 --
+            # 用于可视化和调试GelSight传感器的输出
+            self.tactile_img_save_dir = os.path.join(os.getcwd(), "tactile_images")
+            os.makedirs(self.tactile_img_save_dir, exist_ok=True)
 
-        # -- 加载桌子模型 --
-        # 从Isaac Nucleus资源库加载一个USD格式的桌子模型
-        cfg = sim_utils.UsdFileCfg(usd_path=f"{ISAAC_NUCLEUS_DIR}/Props/Mounts/SeattleLabTable/table_instanceable.usd")
-        # 将桌子生成到场景中,使用正则表达式路径以支持多环境克隆
-        # translation: 桌子的位置; orientation: 桌子的姿态(四元数,表示绕Y轴旋转90度)
-        cfg.func(
-            "/World/envs/env_.*/Table", cfg, translation=(0.55, 0.0, 0.0), orientation=(0.70711, 0.0, 0.0, 0.70711)
-        )
+            # 触觉图像保存计数器和保存间隔
+            self.tactile_save_counter = 0
+            self.tactile_save_interval = 100  # 每100步保存一次触觉图像
 
-        # -- 创建机器人和工件 --
-        # 这里的self.cfg.robot, self.cfg_task.fixed_asset等是在配置文件中定义的ArticulationCfg对象
-        # Isaac Lab框架会解析这些配置对象,并在仿真中创建出对应的物体
-        self._robot = Articulation(self.cfg.robot) # Franka机器人
-        self._fixed_asset = Articulation(self.cfg_task.fixed_asset) # 固定工件(如插孔、螺栓等)
-        # print(self._fixed_asset.init_state)
-        # print("="*80)
-        self._held_asset = Articulation(self.cfg_task.held_asset) # 手持工件(如插销、螺母等)
+            # -- 初始化触觉力场特征提取器 --
+            # 加载预训练的神经网络模型,用于从触觉图像提取力场特征
+            checkpoint_path = os.path.join(
+                os.path.dirname(__file__),
+                "network/last.ckpt"
+            )
+            print(f"[FactoryEnv] Loading tactile feature extractor from: {checkpoint_path}")
+            self.tactile_extractor = create_tactile_encoder(
+                encoder_type='force_field', # 使用力场特征提取器
+                checkpoint_path=checkpoint_path, # 预训练模型路径
+                device=self.device, # 使用与环境相同的设备(CPU/GPU)
+                freeze_model=True # 冻结模型参数,不进行训练
+            )
+            print(f"[FactoryEnv] Tactile feature extractor loaded. Output dim: {self.tactile_extractor.get_output_dim()}")
 
+        # TODO 完善后续逻辑部分
 
-
-        # -- 克隆环境并添加到场景中 --
-        # 这一步会根据scene.num_envs的设置(如128),将刚刚创建的单个环境(env_0)复制127份
-        self.scene.clone_environments(copy_from_source=False)
-        # 在CPU模式下需要手动设置碰撞过滤规则
-        if self.device == "cpu":
-            self.scene.filter_collisions()
-
-        # -- 将创建好的物体注册到场景管理器中 --
-        # 方便后续统一管理和数据读取
-        self.scene.articulations["robot"] = self._robot
-        self.scene.articulations["fixed_asset"] = self._fixed_asset
-        self.scene.articulations["held_asset"] = self._held_asset
-        if self.cfg_task.name == "gear_mesh":
-            self.scene.articulations["small_gear"] = self._small_gear_asset
-            self.scene.articulations["large_gear"] = self._large_gear_asset
-
-        # -- 创建并注册触觉传感器 --
-        # 左右两个GelSight Mini传感器分别安装在Franka夹爪的两个指尖上
-        self.gsmini_left = GelSightSensor(self.cfg.gsmini_left)
-        self.scene.sensors["gsmini_left"] = self.gsmini_left
-
-        self.gsmini_right = GelSightSensor(self.cfg.gsmini_right)
-        self.scene.sensors["gsmini_right"] = self.gsmini_right
-
-        # -- 添加光源 --
-        # 创建一个穹顶光(Dome Light)用于场景照明
-        light_cfg = sim_utils.DomeLightCfg(intensity=2000.0, color=(0.75, 0.75, 0.75))
-        light_cfg.func("/World/Light", light_cfg)
 
     def _compute_intermediate_values(self, dt):
         """
@@ -448,8 +413,13 @@ class FactoryEnv(DirectRLEnv):
         # -- 获取触觉传感器数据 --
         # Get tactile sensor data
         if self.cfg_task.tactile_enabled_in_obs == True:
-            tactile_left = self.gsmini_left.data.output.get("tactile_rgb")  # Shape: (num_envs, H, W, 3)
+            tactile_rgb_left = self.gsmini_left.data.output.get("tactile_rgb")  # Shape: (num_envs, H, W, 3)
             tactile_right = self.gsmini_right.data.output.get("tactile_rgb")  # Shape: (num_envs, H, W, 3)
+            tactile_depth_left = self.gsmini_left.data.output.get("camera_depth")  # Shape: (num_envs, H, W, 3)
+            tactile_depth_right = self.gsmini_right.data.output.get("camera_depth")  # Shape: (num_envs, H, W, 3)
+            tactile_marker_left = self.gsmini_left.data.output.get("marker_motion")  # Shape: (num_envs, H, W, 3)
+            tactile_marker_right = self.gsmini_right.data.output.get("marker_motion")  # Shape: (num_envs, H, W, 3)
+            
             # Flatten tactile images for state (critic): (num_envs, H*W*3)
             # 展平触觉图像用于状态(Critic),并归一化到[0,1]
             # tactile_left_flat = tactile_left.reshape(self.num_envs, -1).float() / 255.0  # Normalize to [0, 1]
@@ -458,7 +428,7 @@ class FactoryEnv(DirectRLEnv):
             # Extract force field features for observation (actor): (num_envs, 3)
             # 使用预训练的神经网络提取力场特征用于观测(Actor)
             # tactile_extractor expects (B, H, W, 3) in range [0, 1]
-            tactile_force_field = self.tactile_extractor(tactile_left.float() / 255.0, tactile_right.float() / 255.0)
+            tactile_force_field = self.tactile_extractor(tactile_rgb_left.float() / 255.0, tactile_rgb_right.float() / 255.0)
             obs_dict["tactile_force_field"] = tactile_force_field
         # -- 构建观测字典(Actor使用) --
 
@@ -522,12 +492,45 @@ class FactoryEnv(DirectRLEnv):
             self.cfg.ctrl.ema_factor * action.clone().to(self.device) + (1 - self.cfg.ctrl.ema_factor) * self.actions
         )
 
+    def generate_ctrl_signals(self):
+        """
+        生成控制信号:设置Franka的关节位置目标(手指)或关节力矩(手臂)。
+        调用操作空间控制器计算手臂关节的力矩,并设置夹爪的位置目标。
+        """
+        # 调用控制模块的compute_dof_torque函数,计算关节力矩
+        self.joint_torque, self.applied_wrench = fc.compute_dof_torque(
+            cfg=self.cfg,
+            dof_pos=self.joint_pos,
+            dof_vel=self.joint_vel,  # _fd,
+            fingertip_midpoint_pos=self.fingertip_midpoint_pos,
+            fingertip_midpoint_quat=self.fingertip_midpoint_quat,
+            fingertip_midpoint_linvel=self.ee_linvel_fd,  # 使用有限差分计算的速度
+            fingertip_midpoint_angvel=self.ee_angvel_fd,
+            jacobian=self.fingertip_midpoint_jacobian,
+            arm_mass_matrix=self.arm_mass_matrix,
+            ctrl_target_fingertip_midpoint_pos=self.ctrl_target_fingertip_midpoint_pos,
+            ctrl_target_fingertip_midpoint_quat=self.ctrl_target_fingertip_midpoint_quat,
+            task_prop_gains=self.task_prop_gains,
+            task_deriv_gains=self.task_deriv_gains,
+            device=self.device,
+        )
+
+        # set target for gripper joints to use physx's PD controller
+        # 设置夹爪关节的位置目标(使用PhysX的PD控制器)
+        self.ctrl_target_joint_pos[:, 7:9] = self.ctrl_target_gripper_dof_pos
+        # 夹爪关节不使用力矩控制,设为0
+        self.joint_torque[:, 7:9] = 0.0
+
+        # 将位置目标和力矩目标发送给机器人
+        self._robot.set_joint_position_target(self.ctrl_target_joint_pos)
+        self._robot.set_joint_effort_target(self.joint_torque)
     def close_gripper_in_place(self):
         """
         保持夹爪在当前位置不动,同时闭合夹爪。
         主要用于重置阶段抓取物体时使用。
         """
         # 创建零动作(不移动末端)
+
         actions = torch.zeros((self.num_envs, 6), device=self.device)
         ctrl_target_gripper_dof_pos = 0.0  # 0.0 = 闭合夹爪
 
@@ -643,54 +646,6 @@ class FactoryEnv(DirectRLEnv):
         # 生成控制信号(计算关节力矩)
         self.generate_ctrl_signals()
 
-    def _set_gains(self, prop_gains, rot_deriv_scale=1.0):
-        """
-        使用临界阻尼设置机器人控制器增益。
-        临界阻尼(critical damping): D = 2*sqrt(K),可以实现快速无振荡的响应。
-
-        Args:
-            prop_gains: 比例增益(P-gain),shape: [num_envs, 6]
-            rot_deriv_scale: 旋转部分D-gain的额外缩放因子
-        """
-        # 设置P-gain
-        self.task_prop_gains = prop_gains
-        # 根据临界阻尼公式计算D-gain: D = 2*sqrt(K)
-        self.task_deriv_gains = 2 * torch.sqrt(prop_gains)
-        # 对旋转部分的D-gain进行额外缩放(通常旋转需要更小的阻尼)
-        self.task_deriv_gains[:, 3:6] /= rot_deriv_scale
-
-    def generate_ctrl_signals(self):
-        """
-        生成控制信号:设置Franka的关节位置目标(手指)或关节力矩(手臂)。
-        调用操作空间控制器计算手臂关节的力矩,并设置夹爪的位置目标。
-        """
-        # 调用控制模块的compute_dof_torque函数,计算关节力矩
-        self.joint_torque, self.applied_wrench = fc.compute_dof_torque(
-            cfg=self.cfg,
-            dof_pos=self.joint_pos,
-            dof_vel=self.joint_vel,  # _fd,
-            fingertip_midpoint_pos=self.fingertip_midpoint_pos,
-            fingertip_midpoint_quat=self.fingertip_midpoint_quat,
-            fingertip_midpoint_linvel=self.ee_linvel_fd,  # 使用有限差分计算的速度
-            fingertip_midpoint_angvel=self.ee_angvel_fd,
-            jacobian=self.fingertip_midpoint_jacobian,
-            arm_mass_matrix=self.arm_mass_matrix,
-            ctrl_target_fingertip_midpoint_pos=self.ctrl_target_fingertip_midpoint_pos,
-            ctrl_target_fingertip_midpoint_quat=self.ctrl_target_fingertip_midpoint_quat,
-            task_prop_gains=self.task_prop_gains,
-            task_deriv_gains=self.task_deriv_gains,
-            device=self.device,
-        )
-
-        # set target for gripper joints to use physx's PD controller
-        # 设置夹爪关节的位置目标(使用PhysX的PD控制器)
-        self.ctrl_target_joint_pos[:, 7:9] = self.ctrl_target_gripper_dof_pos
-        # 夹爪关节不使用力矩控制,设为0
-        self.joint_torque[:, 7:9] = 0.0
-
-        # 将位置目标和力矩目标发送给机器人
-        self._robot.set_joint_position_target(self.ctrl_target_joint_pos)
-        self._robot.set_joint_effort_target(self.joint_torque)
 
     def _get_dones(self):
         """
@@ -754,49 +709,7 @@ class FactoryEnv(DirectRLEnv):
 
         return curr_successes
 
-    def _get_rewards(self):
-        """
-        更新奖励并计算成功统计信息。
-        这是RL环境的核心函数,计算每个时间步的奖励。
 
-        Returns:
-            rew_buf: 奖励张量,shape: [num_envs]
-        """
-
-        # 算奖励
-        rew_dict, rew_scales, curr_successes = self._get_factory_rew_dict()
-        rew_buf = sum(rew_dict[k] * rew_scales[k] for k in rew_dict)
-        # Only log episode success rates at the end of an episode.
-        # 只在回合结束时记录成功率
-        if torch.any(self.reset_buf):
-            self.extras["successes"] = torch.count_nonzero(curr_successes) / self.num_envs
-
-        # Get the time at which an episode first succeeds.
-        # 记录回合首次成功的时间步
-        first_success = torch.logical_and(curr_successes, torch.logical_not(self.ep_succeeded))
-        self.ep_succeeded[curr_successes] = 1
-
-        first_success_ids = first_success.nonzero(as_tuple=False).squeeze(-1)
-        self.ep_success_times[first_success_ids] = self.episode_length_buf[first_success_ids]
-        nonzero_success_ids = self.ep_success_times.nonzero(as_tuple=False).squeeze(-1)
-
-        # 计算平均成功时间(只针对成功的回合)
-        if len(nonzero_success_ids) > 0:  # Only log for successful episodes.
-            success_times = self.ep_success_times[nonzero_success_ids].sum() / len(nonzero_success_ids)
-            self.extras["success_times"] = success_times
-
-        # 保存当前动作,用于下一步计算动作梯度惩罚
-        self.prev_actions = self.actions.clone()
-        total_reward_components = {}
-        for rew_name, rew_scale in rew_scales.items():
-            self.extras[f"logs_rwd_{rew_name}"] = (rew_dict[rew_name] * rew_scale).mean()
-        # Save tactile images periodically when there is actual contact
-        # 周期性保存触觉图像(用于调试)
-        # self.tactile_save_counter += 1
-        # if self.tactile_save_counter % self.tactile_save_interval == 0:
-        #     self._save_tactile_images_during_episode()
-
-        return rew_buf
     
     def _get_factory_rew_dict(self):
         '''
@@ -848,7 +761,8 @@ class FactoryEnv(DirectRLEnv):
                 orientation_mask = (min_yaw_error < orientation_threshold).float()
                 if self.cfg.debug == True:
                     print("="*20)
-                    print("min_yaw_error,orientation_mask===",min_yaw_error,orientation_mask)
+                    # print("min_yaw_error,orientation_mask===",min_yaw_error,orientation_mask)
+                    print("orientation_mask===",orientation_mask)
             else: # 对于不需要方向对齐的任务（圆形），姿态门控始终为1
                 orientation_mask = torch.ones((self.num_envs,), device=self.device)
             # f. 计算其他共享的奖励项
@@ -957,72 +871,50 @@ class FactoryEnv(DirectRLEnv):
                 
         return rew_dict, rew_scales, curr_successes
     
-    def _update_rew_buf(self, curr_successes):
+    def _get_rewards(self):
         """
-        计算当前时间步的奖励。
-        使用多种奖励项的组合:关键点奖励、动作惩罚、成功奖励等。
-
-        Args:
-            curr_successes: 当前成功掩码,shape: [num_envs]
+        更新奖励并计算成功统计信息。
+        这是RL环境的核心函数,计算每个时间步的奖励。
 
         Returns:
             rew_buf: 奖励张量,shape: [num_envs]
         """
-        rew_dict = {}
 
-        # Keypoint rewards.
-        # -- 关键点奖励(使用压缩函数) --
-        # 压缩函数: 将距离映射到[0,1]范围,距离越小奖励越高
-        def squashing_fn(x, a, b):
-            # 双曲函数形式: 1 / (e^(ax) + b + e^(-ax))
-            # a控制陡峭程度, b控制基线高度
-            return 1 / (torch.exp(a * x) + b + torch.exp(-a * x))
+        # 算奖励
+        rew_dict, rew_scales, curr_successes = self._get_factory_rew_dict()
+        rew_buf = sum(rew_dict[k] * rew_scales[k] for k in rew_dict)
+        # Only log episode success rates at the end of an episode.
+        # 只在回合结束时记录成功率
+        if torch.any(self.reset_buf):
+            self.extras["successes"] = torch.count_nonzero(curr_successes) / self.num_envs
 
-        # 基线奖励: 使用较平缓的压缩函数,鼓励大致接近目标
-        a0, b0 = self.cfg_task.keypoint_coef_baseline
-        rew_dict["kp_baseline"] = squashing_fn(self.keypoint_dist, a0, b0)
+        # Get the time at which an episode first succeeds.
+        # 记录回合首次成功的时间步
+        first_success = torch.logical_and(curr_successes, torch.logical_not(self.ep_succeeded))
+        self.ep_succeeded[curr_successes] = 1
 
-        # 粗对齐奖励: 使用中等陡峭的压缩函数,鼓励进入目标附近
-        a1, b1 = self.cfg_task.keypoint_coef_coarse
-        rew_dict["kp_coarse"] = squashing_fn(self.keypoint_dist, a1, b1)
+        first_success_ids = first_success.nonzero(as_tuple=False).squeeze(-1)
+        self.ep_success_times[first_success_ids] = self.episode_length_buf[first_success_ids]
+        nonzero_success_ids = self.ep_success_times.nonzero(as_tuple=False).squeeze(-1)
 
-        # 精对齐奖励: 使用非常陡峭的压缩函数,鼓励精确对齐
-        a2, b2 = self.cfg_task.keypoint_coef_fine
-        rew_dict["kp_fine"] = squashing_fn(self.keypoint_dist, a2, b2)
+        # 计算平均成功时间(只针对成功的回合)
+        if len(nonzero_success_ids) > 0:  # Only log for successful episodes.
+            success_times = self.ep_success_times[nonzero_success_ids].sum() / len(nonzero_success_ids)
+            self.extras["success_times"] = success_times
 
-        # Action penalties.
-        # -- 动作惩罚 --
-        # 动作幅度惩罚: 鼓励小幅度动作,节省能量
-        rew_dict["action_penalty"] = torch.norm(self.actions, p=2)
-        # 动作变化率惩罚: 鼓励平滑动作,避免抖动
-        rew_dict["action_grad_penalty"] = torch.norm(self.actions - self.prev_actions, p=2, dim=-1)
-
-        # -- 接触奖励 --
-        # 判断是否已经接触(使用较宽松的阈值)
-        rew_dict["curr_engaged"] = (
-            self._get_curr_successes(success_threshold=self.cfg_task.engage_threshold, check_rot=False).clone().float()
-        )
-
-        # -- 成功奖励 --
-        rew_dict["curr_successes"] = curr_successes.clone().float()
-
-        # -- 综合奖励 --
-        # 奖励 = 关键点奖励 - 动作惩罚 + 接触奖励 + 成功奖励
-        rew_buf = (
-            rew_dict["kp_coarse"]
-            + rew_dict["kp_baseline"]
-            + rew_dict["kp_fine"]
-            - rew_dict["action_penalty"] * self.cfg_task.action_penalty_scale
-            - rew_dict["action_grad_penalty"] * self.cfg_task.action_grad_penalty_scale
-            + rew_dict["curr_engaged"]
-            + rew_dict["curr_successes"]
-        )
-
-        # 记录各项奖励的平均值(用于监控训练)
-        for rew_name, rew in rew_dict.items():
-            self.extras[f"logs_rew_{rew_name}"] = rew.mean()
+        # 保存当前动作,用于下一步计算动作梯度惩罚
+        self.prev_actions = self.actions.clone()
+        total_reward_components = {}
+        for rew_name, rew_scale in rew_scales.items():
+            self.extras[f"logs_rwd_{rew_name}"] = (rew_dict[rew_name] * rew_scale).mean()
+        # Save tactile images periodically when there is actual contact
+        # 周期性保存触觉图像(用于调试)
+        # self.tactile_save_counter += 1
+        # if self.tactile_save_counter % self.tactile_save_interval == 0:
+        #     self._save_tactile_images_during_episode()
 
         return rew_buf
+
 
     def _reset_idx(self, env_ids):
         """
@@ -1462,6 +1354,21 @@ class FactoryEnv(DirectRLEnv):
 
         # -- 10. 重新启用重力 --
         physics_sim_view.set_gravity(carb.Float3(*self.cfg.sim.gravity))
+    def _set_gains(self, prop_gains, rot_deriv_scale=1.0):
+        """
+        使用临界阻尼设置机器人控制器增益。
+        临界阻尼(critical damping): D = 2*sqrt(K),可以实现快速无振荡的响应。
+
+        Args:
+            prop_gains: 比例增益(P-gain),shape: [num_envs, 6]
+            rot_deriv_scale: 旋转部分D-gain的额外缩放因子
+        """
+        # 设置P-gain
+        self.task_prop_gains = prop_gains
+        # 根据临界阻尼公式计算D-gain: D = 2*sqrt(K)
+        self.task_deriv_gains = 2 * torch.sqrt(prop_gains)
+        # 对旋转部分的D-gain进行额外缩放(通常旋转需要更小的阻尼)
+        self.task_deriv_gains[:, 3:6] /= rot_deriv_scale
 
     def _save_tactile_images_during_episode(self):
         """

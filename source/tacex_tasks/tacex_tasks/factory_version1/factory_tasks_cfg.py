@@ -83,14 +83,14 @@ class FactoryTask:
         # "tactile_force_field",
     ]
     # --- 奖励参数 ---
-    xy_dist_coef: tuple[float, float] = (10.0, 1.0)
-    z_dist_coef: tuple[float, float] = (30.0, 1.0)
-    xy_dist_reward_scale: float = 1.0
-    z_dist_reward_scale: float = 1.0
+    xy_dist_coef: tuple[float, float] = (50.0, 2.0)
+    z_dist_coef: tuple[float, float] = (20.0, 4.0)
+    xy_dist_reward_scale: float = 2.0
+    z_dist_reward_scale: float = 2.0
 
-    orientation_reward_scale: float = 0.5
+    orientation_reward_scale: float = 3
     yaw_success_threshold: float = float(np.deg2rad(5.0)) # 成功判断用
-    action_penalty_ee_scale: float = 0.01 # 对动作大小的惩罚权重。较大的动作会受到惩罚，鼓励更平滑的控制
+    action_penalty_ee_scale: float = 0.03 # 对动作大小的惩罚权重。较大的动作会受到惩罚，鼓励更平滑的控制
     action_grad_penalty_scale: float = 0.1 # 对动作变化率（梯度）的惩罚权重。鼓励动作的连续性，防止抖动
     
     success_threshold: float = 0.04
@@ -143,6 +143,66 @@ class FactoryTask:
     kp_fine_scale : float = 1.0
     engage_threshold: float = 0.9
 
+    def __post_init__(self):
+        """
+        在对象初始化完成后，动态地构建 ArticulationCfg。
+        """
+        # --- 为 fixed_asset (Hole) 构建配置 ---
+        self.fixed_asset = ArticulationCfg(
+            prim_path="/World/envs/env_.*/FixedAsset",
+            spawn=sim_utils.UsdFileCfg(
+                # 【核心】从 self.fixed_asset_cfg 中动态获取 usd_path
+                usd_path=self.fixed_asset_cfg.usd_path,
+                activate_contact_sensors=True,
+                rigid_props=sim_utils.RigidBodyPropertiesCfg(
+                    max_depenetration_velocity=5.0,
+                    linear_damping=0.0,
+                    angular_damping=0.0,
+                    max_linear_velocity=1000.0,
+                    max_angular_velocity=3666.0,
+                    enable_gyroscopic_forces=True,
+                    solver_position_iteration_count=192,
+                    solver_velocity_iteration_count=1,
+                    max_contact_impulse=1e32,
+                ),
+                # 【核心】从 self.fixed_asset_cfg 中动态获取 mass
+                mass_props=sim_utils.MassPropertiesCfg(mass=self.fixed_asset_cfg.mass),
+                collision_props=sim_utils.CollisionPropertiesCfg(contact_offset=0.005, rest_offset=0.0),
+            ),
+            init_state=ArticulationCfg.InitialStateCfg(
+                pos=(0.6, 0.0, 0.05), rot=(1.0, 0.0, 0.0, 0.0), joint_pos={}, joint_vel={}
+            ),
+            actuators={},
+        )
+
+        # --- 为 held_asset (Peg) 构建配置 ---
+        self.held_asset = ArticulationCfg(
+            prim_path="/World/envs/env_.*/HeldAsset",
+            spawn=sim_utils.UsdFileCfg(
+                # 【核心】从 self.held_asset_cfg 中动态获取 usd_path
+                usd_path=self.held_asset_cfg.usd_path,
+                activate_contact_sensors=True,
+                rigid_props=sim_utils.RigidBodyPropertiesCfg(
+                    max_depenetration_velocity=5.0,
+                    linear_damping=0.0,
+                    angular_damping=0.0,
+                    max_linear_velocity=1000.0,
+                    max_angular_velocity=3666.0,
+                    enable_gyroscopic_forces=True,
+                    solver_position_iteration_count=192,
+                    solver_velocity_iteration_count=1,
+                    max_contact_impulse=1e32,
+                ),
+                # 【核心】从 self.held_asset_cfg 中动态获取 mass
+                mass_props=sim_utils.MassPropertiesCfg(mass=self.held_asset_cfg.mass),
+                collision_props=sim_utils.CollisionPropertiesCfg(contact_offset=0.005, rest_offset=0.0),
+            ),
+            init_state=ArticulationCfg.InitialStateCfg(
+                pos=(0.0, 0.4, 0.1), rot=(1.0, 0.0, 0.0, 0.0), joint_pos={}, joint_vel={}
+            ),
+            actuators={},
+        )
+
 
 @configclass
 class Peg8mm(HeldAssetCfg):
@@ -159,90 +219,6 @@ class Hole8mm(FixedAssetCfg):
     height = 0.025
     base_height = 0.0
 
-
-@configclass
-class PegInsert(FactoryTask):
-    name = "peg_insert"
-    fixed_asset_cfg = Hole8mm()
-    held_asset_cfg = Peg8mm()
-    asset_size = 8.0
-    duration_s = 10.0
-
-    # Robot
-    hand_init_pos: list = [0.0, 0.0, 0.047]  # Relative to fixed asset tip.
-    hand_init_pos_noise: list = [0.02, 0.02, 0.01]
-    hand_init_orn: list = [3.1416, 0.0, 0.0]
-    hand_init_orn_noise: list = [0.0, 0.0, 0.785]
-
-    # Fixed Asset (applies to all tasks)
-    fixed_asset_init_pos_noise: list = [0.05, 0.05, 0.05]
-    fixed_asset_init_orn_deg: float = 0.0
-    fixed_asset_init_orn_range_deg: float = 360.0
-
-    # Held Asset (applies to all tasks)
-    held_asset_pos_noise: list = [0.003, 0.0, 0.003]  # noise level of the held asset in gripper
-    held_asset_rot_init: float = 0.0
-
-    # Rewards
-    keypoint_coef_baseline: list = [5, 4]
-    keypoint_coef_coarse: list = [50, 2]
-    keypoint_coef_fine: list = [100, 0]
-    # Fraction of socket height.
-    success_threshold: float = 0.04
-    engage_threshold: float = 0.9
-
-    fixed_asset: ArticulationCfg = ArticulationCfg(
-        prim_path="/World/envs/env_.*/FixedAsset",
-        spawn=sim_utils.UsdFileCfg(
-            usd_path=fixed_asset_cfg.usd_path,
-            activate_contact_sensors=True,
-            rigid_props=sim_utils.RigidBodyPropertiesCfg(
-                disable_gravity=False,
-                max_depenetration_velocity=5.0,
-                linear_damping=0.0,
-                angular_damping=0.0,
-                max_linear_velocity=1000.0,
-                max_angular_velocity=3666.0,
-                enable_gyroscopic_forces=True,
-                solver_position_iteration_count=192,
-                solver_velocity_iteration_count=1,
-                max_contact_impulse=1e32,
-            ),
-            mass_props=sim_utils.MassPropertiesCfg(mass=fixed_asset_cfg.mass),
-            collision_props=sim_utils.CollisionPropertiesCfg(contact_offset=0.005, rest_offset=0.0),
-        ),
-        init_state=ArticulationCfg.InitialStateCfg(
-            pos=(0.6, 0.0, 0.05), rot=(1.0, 0.0, 0.0, 0.0), joint_pos={}, joint_vel={}
-        ),
-        actuators={},
-    )
-
-    
-    held_asset: ArticulationCfg = ArticulationCfg(
-        prim_path="/World/envs/env_.*/HeldAsset",
-        spawn=sim_utils.UsdFileCfg(
-            usd_path=held_asset_cfg.usd_path,
-            activate_contact_sensors=True,
-            rigid_props=sim_utils.RigidBodyPropertiesCfg(
-                disable_gravity=True,
-                max_depenetration_velocity=5.0,
-                linear_damping=0.0,
-                angular_damping=0.0,
-                max_linear_velocity=1000.0,
-                max_angular_velocity=3666.0,
-                enable_gyroscopic_forces=True,
-                solver_position_iteration_count=192,
-                solver_velocity_iteration_count=1,
-                max_contact_impulse=1e32,
-            ),
-            mass_props=sim_utils.MassPropertiesCfg(mass=held_asset_cfg.mass),
-            collision_props=sim_utils.CollisionPropertiesCfg(contact_offset=0.005, rest_offset=0.0),
-        ),
-        init_state=ArticulationCfg.InitialStateCfg(
-            pos=(0.0, 0.4, 0.1), rot=(1.0, 0.0, 0.0, 0.0), joint_pos={}, joint_vel={}
-        ),
-        actuators={},
-    )
 
 # 本地资产目录
 LOCAL_ASSETS_DIR = os.path.join(os.path.dirname(__file__), "assets")
@@ -265,7 +241,7 @@ class Peg10mmLocal(HeldAssetCfg):
     - 高度: 50mm
     - 质量: 25g
     """
-    usd_path = f"{LOCAL_ASSETS_DIR}/peg/my_project/peg.usd"
+    usd_path = f"{LOCAL_ASSETS_DIR}/peg.usd"
     diameter = 0.010  # 10mm 直径
     height = 0.050    # 50mm 高度
     mass = 0.025      # 25g 质量
@@ -290,102 +266,71 @@ class Hole10mmLocal(FixedAssetCfg):
     mass = 0.05       # 50g 质量
     friction = 0.75   # 摩擦系数
 
+@configclass
+class LPeg_III(HeldAssetCfg):
+    """ 定义一个公差III的15mm L形插销 """
+    usd_path = f"{LOCAL_ASSETS_DIR}/L_hole/L_peg_III.usd"
+
+    diameter: float = 0.0149
+    # 高度和质量与圆形资产保持一致
+    height: float = 0.050
+    mass: float = 0.019 + 0.003
 
 # ================================================================================================
 # 测试任务配置
 # Test Task Configuration
 # ================================================================================================
-
+@configclass
+class LHole(FixedAssetCfg):
+    """ 定义一个匹配15mm L形插销的L孔 """
+    usd_path = f"{LOCAL_ASSETS_DIR}/L_hole/L_hole.usd"
+    diameter: float = 0.015
+    # 孔深和基座高度与圆形资产保持一致
+    height: float = 0.025
+    base_height: float = 0.0
 
 @configclass
-class PegInsert_L_III(PegInsert):
-    """
-    Peg插入测试任务配置 - 与PegInsert完全相同，仅使用本地USD资产
+class PegInsert_L_III(FactoryTask):
 
-
-    - 使用本地10mm peg和hole资产
-
-    所有训练参数(随机化范围、奖励函数、物理属性等)与PegInsert保持一致,
-
-    使用方法:
-    ```bash
-    # 训练
-    ./IsaacLab/isaaclab.sh -p ./scripts/reinforcement_learning/rl_games/train.py \
-        --task TacEx-Factory-PegInsert-Test-v1 --num_envs 100 --enable_cameras
-
-    # 测试
-    ./IsaacLab/isaaclab.sh -p ./scripts/reinforcement_learning/rl_games/play.py \
-        --task TacEx-Factory-PegInsert-Test-v1 --num_envs 1
-    ```
-    """
     name = "peg_insert_test"
     # -----新增奖励相关设置------
 
     use_decoupled_reward = True
     requires_orientation_logic = True
-    xy_dist_reward_scale = 1.0
-    z_dist_reward_scale = 3.0
+    xy_dist_reward_scale = 2.0
+    xy_dist_coef: list = [50, 2]
+    z_dist_reward_scale = 2.0
+    z_dist_coef: list = [20, 4]
+
     duration_s = 20
     # 唯一的区别: 使用本地资产而非Nucleus资产
-    fixed_asset_cfg = Hole10mmLocal()  # 本地10mm hole
-    held_asset_cfg = Peg10mmLocal()    # 本地10mm peg
-    asset_size = 10.0  # 10mm
     hand_init_pos_noise: list = [0.0, 0.0, 0.0]  # 无位置随机
-    hand_init_orn_noise: list = [0.0, 0.0, 0.0]  # 无姿态随机
+    hand_init_orn_noise: list = [0.0, 0.0, 0.2]  # 无姿态随机
 
     # 禁用固定资产(Hole)的随机化
     fixed_asset_init_pos_noise: list = [0.0, 0.0, 0.0]  # Hole位置固定
-    fixed_asset_init_orn_deg: float = 0.0  # Hole初始方向
-    fixed_asset_init_orn_range_deg: float = 0.0  # Hole方向随机范围=0，即不随机
+    fixed_asset_init_orn_deg: float = 180.0  # Hole初始方向
+    fixed_asset_init_orn_range_deg: float = 30.0  # Hole方向随机范围=0，即不随机
 
     # 禁用手持资产(Peg)在夹爪中的随机化
-    held_asset_pos_noise: list = [0.0, 0.0, 0.0]  # Peg在夹爪中位置固定
-    # 所有其他参数从PegInsert继承:
-    # - duration_s = 10.0
-    # - hand_init_pos = [0.0, 0.0, 0.047]
-    # - hand_init_pos_noise = [0.02, 0.02, 0.01]
-    # - hand_init_orn = [3.1416, 0.0, 0.0]
-    # - hand_init_orn_noise = [0.0, 0.0, 0.785]
-    # - fixed_asset_init_pos_noise = [0.05, 0.05, 0.05]
-    # - fixed_asset_init_orn_deg = 0.0
-    # - fixed_asset_init_orn_range_deg = 360.0
-    # - held_asset_pos_noise = [0.003, 0.0, 0.003]
-    # - held_asset_rot_init = 0.0
-    # - keypoint_coef_baseline/coarse/fine
-    # - success_threshold = 0.04
-    # - engage_threshold = 0.9
-    
+    held_asset_pos_noise: list = [0.003, 0, 0.003]  # Peg在夹爪中位置固定
     # 指定构成"状态"的条目及其顺序
+    orientation_reward_scale: float = 3.0  # 姿态对齐奖励的权重
+    # 成功完成任务时，允许的最终偏航角误差（弧度）
+    yaw_success_threshold: float = 0.01  # 弧度，约等于1.15度
+    
+    # L形只有1个对称方向：0度
+    symmetry_angles_deg: list = [0.0]
+    orientation_coef: list = [5, 4]
 
-    # 重要: 必须重新定义ArticulationCfg以使用新的USD路径
-    # 这是因为Python类属性在定义时就会被求值,继承的ArticulationCfg仍然使用父类的usd_path
-    fixed_asset: ArticulationCfg = ArticulationCfg(
-    # fixed_asset: RigidObjectCfg = RigidObjectCfg(
-        prim_path="/World/envs/env_.*/FixedAsset",
-        spawn=sim_utils.UsdFileCfg(
-            usd_path=f"{LOCAL_ASSETS_DIR}/hole/my_project/hole.usd",  # 直接使用本地10mm hole的路径
-            activate_contact_sensors=True,
-            rigid_props=sim_utils.RigidBodyPropertiesCfg(
-                disable_gravity=True,
-                # kinematic_enabled=True,
-                max_depenetration_velocity=5.0,
-                linear_damping=0.0,
-                angular_damping=0.0,
-                max_linear_velocity=1000.0,
-                max_angular_velocity=3666.0,
-                enable_gyroscopic_forces=True,
-                solver_position_iteration_count=192,
-                solver_velocity_iteration_count=1,
-                max_contact_impulse=1e32,
-            ),
-            mass_props=sim_utils.MassPropertiesCfg(mass=0.05),  # 50g
-            collision_props=sim_utils.CollisionPropertiesCfg(contact_offset=0.005, rest_offset=0.0),
-        ),
-        init_state=ArticulationCfg.InitialStateCfg(  # 只有reset阶段才调用init state！环境init阶段调用_setup_scene()
-            pos=(0.6, 0.0, 0.01), rot=(1,0, 0.0, 0.0), joint_pos={}, joint_vel={}
-        ),
-        actuators={},
-    )
+    xy_dist_coef: list = [50, 2]
+    xy_dist_reward_scale: float = 2.0
+    z_dist_coef: list = [20, 4]
+    z_dist_reward_scale: float = 2.0
+    z_reward_activation_threshold: float = 0.0002 # 当x，y平面距离小于0.2mm时，才激活Z轴奖励
+    held_asset_cfg = LPeg_III()
+    fixed_asset_cfg = LHole()
+    asset_size = held_asset_cfg.diameter
 
 #   | 旋转描述      | 四元数 (w, x, y, z)       |
 #   |-----------|----------------------------|
@@ -397,32 +342,6 @@ class PegInsert_L_III(PegInsert):
 #   | 绕Y轴旋转180° | (0.0, 0.0, 1.0, 0.0)       |
 #   | 绕Z轴旋转180° | (0.0, 0.0, 0.0, 1.0)       |
 
-    held_asset: ArticulationCfg = ArticulationCfg(
-    # fixed_asset: RigidObjectCfg = RigidObjectCfg(
-        prim_path="/World/envs/env_.*/HeldAsset",
-        spawn=sim_utils.UsdFileCfg(
-            usd_path=f"{LOCAL_ASSETS_DIR}/peg/my_project/peg.usd",  # 直接使用本地10mm peg的路径
-            activate_contact_sensors=True,
-            rigid_props=sim_utils.RigidBodyPropertiesCfg(
-                disable_gravity=True,
-                max_depenetration_velocity=5.0,
-                linear_damping=0.0,
-                angular_damping=0.0,
-                max_linear_velocity=1000.0,
-                max_angular_velocity=3666.0,
-                enable_gyroscopic_forces=True,
-                solver_position_iteration_count=192,
-                solver_velocity_iteration_count=1,
-                max_contact_impulse=1e32,
-            ),
-            mass_props=sim_utils.MassPropertiesCfg(mass=0.025),  # 25g
-            collision_props=sim_utils.CollisionPropertiesCfg(contact_offset=0.005, rest_offset=0.0),
-        ),
-        init_state=ArticulationCfg.InitialStateCfg(
-            pos=(0.0, 0.4, 0.1), rot=(1.0, 0.0, 0.0, 0.0), joint_pos={}, joint_vel={}
-        ),
-        actuators={},
-    )
 @configclass
 class GearBase(FixedAssetCfg):
     usd_path = f"{ASSET_DIR}/factory_gear_base.usd"
