@@ -26,7 +26,7 @@ params:
     mlp:
       units: [512, 128, 64]
       activation: elu
-      d2rl: False
+      d2rl: False 
 
       initializer:
         name: default
@@ -66,7 +66,7 @@ params:
     schedule_type: standard
     kl_threshold: 0.008
     score_to_win: 20000
-    max_epochs: 400
+    max_epochs: 800
     save_best_after: 10
     save_frequency: 100
     print_stats: True
@@ -113,6 +113,8 @@ params:
           before_mlp: True
           concat_input: True
           layer_norm: True
+
+
 
     player:
       deterministic: False

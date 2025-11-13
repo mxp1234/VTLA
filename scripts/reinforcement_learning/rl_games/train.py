@@ -6,7 +6,6 @@
 """Script to train RL agent with RL-Games."""
 
 """Launch Isaac Sim Simulator first."""
-
 import argparse
 import sys
 from distutils.util import strtobool
@@ -38,6 +37,8 @@ parser.add_argument(
     const=True,
     help="if toggled, this experiment will be tracked with Weights and Biases",
 )
+parser.add_argument("--debug", action="store_true", default=False)
+
 # append AppLauncher cli args
 AppLauncher.add_app_launcher_args(parser)
 # parse the arguments
@@ -114,7 +115,10 @@ def main(env_cfg: ManagerBasedRLEnvCfg | DirectRLEnvCfg | DirectMARLEnvCfg, agen
         agent_cfg["params"]["config"]["multi_gpu"] = True
         # update env config device
         env_cfg.sim.device = f"cuda:{app_launcher.local_rank}"
-
+        
+    if args_cli.debug:
+        if hasattr(env_cfg, "debug"):
+            env_cfg.debug = True
     # set the environment seed (after multi-gpu config for updated rank from agent seed)
     # note: certain randomizations occur in the environment initialization so we set the seed here
     env_cfg.seed = agent_cfg["params"]["seed"]
@@ -199,7 +203,9 @@ def main(env_cfg: ManagerBasedRLEnvCfg | DirectRLEnvCfg | DirectMARLEnvCfg, agen
         )
         wandb.config.update({"env_cfg": env_cfg.to_dict()})
         wandb.config.update({"agent_cfg": agent_cfg})
-
+        if os.path.exists("/home/pi-zero/isaac-sim/TacEx/source/tacex_tasks/tacex_tasks/factory_version3/peg_in_hole_env_cfg.py"):
+            wandb.save("/home/pi-zero/isaac-sim/TacEx/source/tacex_tasks/tacex_tasks/factory_version3/peg_in_hole_env_cfg.py") 
+            wandb.save("/home/pi-zero/isaac-sim/TacEx/source/tacex_tasks/tacex_tasks/factory_version3/peg_in_hole_tasks_cfg.py")
     if args_cli.checkpoint is not None:
         runner.run({"train": True, "play": False, "sigma": train_sigma, "checkpoint": resume_path})
     else:

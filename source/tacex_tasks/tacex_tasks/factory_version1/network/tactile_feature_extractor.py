@@ -17,207 +17,6 @@ if current_dir not in sys.path:
 from tactile_encoder import TactileForceFieldModel
 
 
-class SparshTactileEncoder(nn.Module):
-    """
-    使用Sparsh预训练ViT模型提取触觉特征
-    从32x32触觉图像提取特征向量
-    """
-    def __init__(
-        self,
-        checkpoint_path=None,
-        vit_model='base',
-        input_size=32,
-        output_dim=256,
-        freeze_encoder=True,
-        upsample_size=224,
-    ):
-        """
-        Args:
-            checkpoint_path: Path to pretrained checkpoint (.pth or .ckpt)
-            vit_model: 'tiny', 'small', 'base', 'large'
-            input_size: Input image size (32 for GelSightMini)
-            output_dim: Output feature dimension
-            freeze_encoder: Whether to freeze ViT encoder weights
-            upsample_size: Size to upsample input before feeding to ViT (224 for standard ViT)
-        """
-        super().__init__()
-
-        self.input_size = input_size
-        self.upsample_size = upsample_size
-        self.freeze_encoder = freeze_encoder
-
-        # 上采样层：32x32 -> 224x224
-        self.upsample = nn.Upsample(
-            size=(upsample_size, upsample_size),
-            mode='bilinear',
-            align_corners=False
-        )
-
-        # 创建ViT encoder（根据配置文件，使用vit_base）
-        print(f"[SparshTactileEncoder] Creating ViT-{vit_model} encoder...")
-        if vit_model == 'base':
-            self.encoder = vit_base(
-                img_size=(upsample_size, upsample_size),
-                patch_size=16,
-                in_chans=3,  # RGB输入
-                pos_embed_fn='learned',  # 使用learned positional embedding
-            )
-        else:
-            raise NotImplementedError(f"ViT model {vit_model} not implemented yet")
-
-        # 获取ViT的输出维度
-        self.vit_embed_dim = VIT_EMBED_DIMS[f'vit_{vit_model}']  # 768 for base
-
-        # 加载预训练权重（如果提供）
-        if checkpoint_path is not None:
-            self._load_pretrained_weights(checkpoint_path)
-
-        # 冻结encoder参数（如果需要）
-        if freeze_encoder:
-            for param in self.encoder.parameters():
-                param.requires_grad = False
-            print(f"[SparshTactileEncoder] Encoder weights frozen")
-
-        # 全局平均池化 + 投影到输出维度
-        # ViT输出: (batch, num_patches, embed_dim)
-        # 我们对所有patch tokens做平均池化，然后投影到output_dim
-        self.projection = nn.Sequential(
-            nn.Linear(self.vit_embed_dim, output_dim),
-            nn.ReLU(),
-        )
-
-        print(f"[SparshTactileEncoder] Initialized:")
-        print(f"  - Input size: {input_size}x{input_size}")
-        print(f"  - Upsample size: {upsample_size}x{upsample_size}")
-        print(f"  - ViT embed dim: {self.vit_embed_dim}")
-        print(f"  - Output dim: {output_dim}")
-        print(f"  - Encoder frozen: {freeze_encoder}")
-
-    def _load_pretrained_weights(self, checkpoint_path):
-        """加载预训练权重"""
-        print(f"[SparshTactileEncoder] Loading checkpoint from: {checkpoint_path}")
-
-        if not os.path.exists(checkpoint_path):
-            print(f"[SparshTactileEncoder] WARNING: Checkpoint not found at {checkpoint_path}")
-            return
-
-        try:
-            # 尝试加载checkpoint
-            checkpoint = torch.load(checkpoint_path, map_location='cpu')
-
-            # 检查checkpoint结构
-            if 'model_encoder' in checkpoint:
-                # Sparsh的checkpoint格式
-                encoder_state = checkpoint['model_encoder']
-                print(f"[SparshTactileEncoder] Found 'model_encoder' in checkpoint")
-            elif 'state_dict' in checkpoint:
-                # Lightning checkpoint格式
-                encoder_state = {}
-                for k, v in checkpoint['state_dict'].items():
-                    if k.startswith('model_encoder.'):
-                        new_key = k.replace('model_encoder.', '')
-                        encoder_state[new_key] = v
-                print(f"[SparshTactileEncoder] Extracted encoder from 'state_dict'")
-            else:
-                # 直接是state_dict
-                encoder_state = checkpoint
-                print(f"[SparshTactileEncoder] Using checkpoint as state_dict directly")
-
-            # 加载权重（忽略不匹配的键）
-            missing_keys, unexpected_keys = self.encoder.load_state_dict(
-                encoder_state, strict=False
-            )
-
-            if missing_keys:
-                print(f"[SparshTactileEncoder] Missing keys: {len(missing_keys)}")
-            if unexpected_keys:
-                print(f"[SparshTactileEncoder] Unexpected keys: {len(unexpected_keys)}")
-
-            print(f"[SparshTactileEncoder] Successfully loaded pretrained weights")
-
-        except Exception as e:
-            print(f"[SparshTactileEncoder] Error loading checkpoint: {e}")
-            print(f"[SparshTactileEncoder] Will use random initialization")
-
-    def forward(self, x):
-        """
-        Args:
-            x: (batch, 3, 32, 32) - GelSightMini RGB images, normalized to [0, 1]
-        Returns:
-            features: (batch, output_dim) - Encoded features
-        """
-        # 上采样到ViT输入大小: (batch, 3, 32, 32) -> (batch, 3, 224, 224)
-        x_upsampled = self.upsample(x)
-
-        # 通过ViT encoder: (batch, 3, 224, 224) -> (batch, num_patches, embed_dim)
-        # ViT forward返回patch tokens (不包括register tokens)
-        with torch.set_grad_enabled(not self.freeze_encoder):
-            vit_output = self.encoder(x_upsampled)  # (batch, num_patches, 768)
-
-        # 全局平均池化: (batch, num_patches, 768) -> (batch, 768)
-        pooled_features = vit_output.mean(dim=1)
-
-        # 投影到输出维度: (batch, 768) -> (batch, output_dim)
-        features = self.projection(pooled_features)
-
-        return features
-
-
-class DualSensorSparshEncoder(nn.Module):
-    """
-    融合左右两个GelSightMini传感器的特征
-    每个传感器独立使用SparshTactileEncoder提取特征，然后融合
-    """
-    def __init__(
-        self,
-        checkpoint_path=None,
-        single_encoder_dim=256,
-        fusion_dim=512,
-        freeze_encoder=True,
-    ):
-        super().__init__()
-
-        # 为左右传感器创建独立的encoder
-        # 注意: 实际应用中可以共享encoder权重，这里为了灵活性分开
-        self.left_encoder = SparshTactileEncoder(
-            checkpoint_path=checkpoint_path,
-            output_dim=single_encoder_dim,
-            freeze_encoder=freeze_encoder,
-        )
-
-        self.right_encoder = SparshTactileEncoder(
-            checkpoint_path=checkpoint_path,
-            output_dim=single_encoder_dim,
-            freeze_encoder=freeze_encoder,
-        )
-
-        # 融合层
-        self.fusion = nn.Sequential(
-            nn.Linear(single_encoder_dim * 2, fusion_dim),
-            nn.ReLU(),
-            nn.Linear(fusion_dim, fusion_dim),
-        )
-
-        print(f"[DualSensorSparshEncoder] Initialized with fusion_dim={fusion_dim}")
-
-    def forward(self, left_img, right_img):
-        """
-        Args:
-            left_img: (batch, 3, 32, 32)
-            right_img: (batch, 3, 32, 32)
-        Returns:
-            fused_features: (batch, fusion_dim)
-        """
-        left_feat = self.left_encoder(left_img)
-        right_feat = self.right_encoder(right_img)
-
-        # 拼接并融合
-        combined = torch.cat([left_feat, right_feat], dim=1)
-        fused = self.fusion(combined)
-
-        return fused
-
-
 class TactileForceFieldExtractor(nn.Module):
     """
     使用Sparsh预训练模型提取触觉force field特征（求和池化版本）
@@ -350,11 +149,8 @@ def create_tactile_encoder(encoder_type='sparsh', **kwargs):
         encoder_type: 'sparsh' | 'dual_sparsh' | 'force_field'
         **kwargs:
     """
-    if encoder_type == 'sparsh':
-        return SparshTactileEncoder(**kwargs)
-    elif encoder_type == 'dual_sparsh':
-        return DualSensorSparshEncoder(**kwargs)
-    elif encoder_type == 'force_field':
+
+    if encoder_type == 'force_field':
         return TactileForceFieldExtractor(**kwargs)
     else:
         raise ValueError(f"Unknown encoder type: {encoder_type}")
@@ -363,7 +159,7 @@ def create_tactile_encoder(encoder_type='sparsh', **kwargs):
 # =============== 测试代码 ===============
 if __name__ == "__main__":
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-
+    
     # 测试ForceField特征提取器
     print("\n=== Testing TactileForceFieldExtractor ===")
     checkpoint_path = "/home/pi-zero/isaac-sim/TacEx/source/tacex_tasks/tacex_tasks/factory_version1/network/last.ckpt"
