@@ -48,14 +48,32 @@ STATE_DIM_CFG = { # 这个字典定义了“状态（State）”中各个组成�
 
 @configclass
 class ObsRandCfg:
-    """
-    这个配置类专门用于定义“观测随机化”的参数。
-    在提供给策略的“观测数据”上添加噪声，以模拟传感器误差或感知不确定性。
-    """
-    # 定义了在“固定工件位置”的观测值上所添加的高斯噪声的标准差。
-    # 例如，[0.001, 0.001, 0.001] 意味着在x, y, z三个轴向上分别添加标准差为0.001米（1毫米）的噪声。
-    # 注意：这不会改变工件在仿真中的真实物理位置，只会改变策略“看到”的位置。
-    fixed_asset_pos = [0.001, 0.001, 0.001]
+    """配置观测随机化的参数。"""
+
+    # --- 总开关 ---
+    # 如果为True，则对所有定义的观测添加实时动态噪声。
+    # 如果为False，则只保留原始的、对固定工件位置的初始偏移噪声。
+    use_all_noise: bool = True
+
+    # --- 噪声标准差定义 ---
+    # 外部物体（Hole）的位置观测噪声 (单位: 米)
+    fixed_asset_pos: list = [0.001, 0.001, 0.001]  # 1.0 mm
+
+    # 机器人本体感觉（Proprioception）的噪声
+    # 机器人末端位置的本体感觉噪声 (单位: 米)
+    fingertip_pos: list = [0.001, 0.001, 0.001] # 1.0 mm
+    # 机器人末端姿态的本体感觉噪声 (以轴-角形式添加, 单位: 弧度)
+    fingertip_quat: list = [0.02, 0.02, 0.02]   # 约 1.1 度
+    
+    # 估算速度的噪声
+    # 末端线速度噪声 (单位: 米/秒)
+    ee_linvel: list = [0.01, 0.01, 0.01]          # 1.0 cm/s
+    # 末端角速度噪声 (单位: 弧度/秒)
+    ee_angvel: list = [0.05, 0.05, 0.05]          # 约 2.8 度/秒
+    
+    # 外部传感器（触觉）的噪声
+    # 触觉力场特征的噪声 (单位: 任意力单位)
+    tactile_force_field: list = [0.1, 0.1, 0.1]
     
 @configclass
 class CtrlCfg:
@@ -481,7 +499,7 @@ class PegInHoleHexagonHole_III_Cfg(PegInHoleEnvCfg):
 class PegInHoleHexagonHole_IV_Cfg(PegInHoleEnvCfg):
     """
     这个配置类专门用于“六边形插销-任务IV”环境。
-    它继承自PegInHoleEnvCfg，并覆写了一些参数以适应具体任务需求。
+    它继承自PegInHoleEnvCfg，并覆写了一些参数以适应具体任务需求。2QWSWW1WW2QW2WWW2WWWW
     """
     task= PegInHoleHexagonHole_IV() # 使用六边形插销任务IV的具体配置对象
     task_name: str = task.name
