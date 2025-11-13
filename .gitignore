@@ -91,3 +91,5 @@ IsaacLab/
 *.pth
 last.ckpt
 *.ckpt
+/source/tacex_tasks/tacex_tasks/factory_version2/success
+/source/tacex_tasks/tacex_tasks/factory_version2/tac_force

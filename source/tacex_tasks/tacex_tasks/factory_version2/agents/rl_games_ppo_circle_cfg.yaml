@@ -48,7 +48,7 @@ params:
   config:
     name: Peg-in-hole
     device: cuda:0
-    full_experiment_name: Circle_IV
+    full_experiment_name: Circle_IV_decoupled_w_noise_1
     env_name: rlgpu
     multi_gpu: False
     ppo: True
@@ -67,7 +67,7 @@ params:
     schedule_type: standard
     kl_threshold: 0.008
     score_to_win: 20000
-    max_epochs: 400
+    max_epochs: 800
     save_best_after: 10
     save_frequency: 100
     print_stats: True

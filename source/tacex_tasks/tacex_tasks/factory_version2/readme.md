@@ -8,12 +8,12 @@
 
 下表给出了所有的孔型（形状+间隙）定义，在定义强化学习任务时，每一种孔型（5x4=20种）都单独对应一个任务，其中包括单独的任务配置，每一类孔形则对应单独的超参数配置(`.yaml`文件)。
 
-|      |      圆形(Circle)       |          方形(Square)           |     三角形(Triangle)     |      六边形(Hexagon)      |                          L形(LHole)                          |
-| :--: | :---------------------: | :-----------------------------: | :----------------------: | :-----------------------: | :----------------------------------------------------------: |
-|  I   |  peg: 8mm, hole: 10mm   |    peg: 8x8mm, hole: 10x10mm    |   peg: 8mm, hole: 12mm   | peg: 9.690mm, hole: 12mm  |   peg: 13x13mm, a=5mm, b=3mm, hole: 15x15mm, a=7mm, b=5mm    |
-|  II  | peg: 9.5mm, hole: 10mm  |  peg: 9.5x9.5mm, hole: 10x10mm  | peg: 11.0mm, hole: 12mm  | peg: 11.423mm, hole: 12mm | peg: 14.5x14.5mm, a=6.5mm, b=4.5mm, hole: 15x15mm, a=7mm, b=5mm |
-| III (公差0.05mm)  | peg: 9.9mm, hole: 10mm  |  peg: 9.9x9.9mm, hole: 10x10mm  | peg: 11.8mm, hole: 12mm  | peg: 11.884mm, hole: 12mm | peg: 14.9x14.9mm, a=6.9mm, b=4.9mm, hole: 15x15mm, a=7mm, b=5mm |
-|  IV (公差0.01mm) | peg: 9.98mm, hole: 10mm | peg: 9.98x9.98mm, hole: 10x10mm | peg: 11.96mm, hole: 12mm | peg: 11.976mm, hole: 12mm | peg: 14.98x14.98mm, a=6.98mm, b=4.98mm, hole: 15x15mm, a=7mm, b=5mm |
+|       |      圆形(Circle)       |          方形(Square)           |     三角形(Triangle)     |      六边形(Hexagon)      |                             L形(LHole)                              |
+| :---: | :---------------------: | :-----------------------------: | :----------------------: | :-----------------------: | :-----------------------------------------------------------------: |
+|   I   |  peg: 8mm, hole: 10mm   |    peg: 8x8mm, hole: 10x10mm    |   peg: 8mm, hole: 12mm   | peg: 9.690mm, hole: 12mm  |       peg: 13x13mm, a=5mm, b=3mm, hole: 15x15mm, a=7mm, b=5mm       |
+|  II   | peg: 9.5mm, hole: 10mm  |  peg: 9.5x9.5mm, hole: 10x10mm  | peg: 11.0mm, hole: 12mm  | peg: 11.423mm, hole: 12mm |   peg: 14.5x14.5mm, a=6.5mm, b=4.5mm, hole: 15x15mm, a=7mm, b=5mm   |
+|  III  | peg: 9.9mm, hole: 10mm  |  peg: 9.9x9.9mm, hole: 10x10mm  | peg: 11.8mm, hole: 12mm  | peg: 11.884mm, hole: 12mm |   peg: 14.9x14.9mm, a=6.9mm, b=4.9mm, hole: 15x15mm, a=7mm, b=5mm   |
+|  IV   | peg: 9.98mm, hole: 10mm | peg: 9.98x9.98mm, hole: 10x10mm | peg: 11.96mm, hole: 12mm | peg: 11.976mm, hole: 12mm | peg: 14.98x14.98mm, a=6.98mm, b=4.98mm, hole: 15x15mm, a=7mm, b=5mm |
 
 上表中不同孔型的几何参数定义如下：
 
@@ -161,6 +161,28 @@ python ./scripts/reinforcement_learning/rl_games/train.py --task Peg-In-Hole-Cir
 ```
 
 以上是简易课程学习的示例，训练完成后，在在`VTLA\logs\rl_games\Peg-in-hole\`目录下将会存在`Circle_IV_keypoints_curriculum_1`和`Circle_IV_keypoints_curriculum_2`，分别对应两个阶段训练的结果。
+
+### 添加噪声
+
+在训练时，为了尽可能模拟现实环境，降低后续Sim2Real的难度，除了在初始化环境时采用域随机化外，还可以在训练时向Actor添加观测（Observation）噪声，注意，之前版本的`factory_version2`仅仅添加了固定工件Hole位置的观测噪声，现在增加了更多噪声的选项。具体而言，添加了**机械臂末端位置和姿态噪声**、**机械臂末端线速度和角速度噪声**、**触觉力噪声（如有）**。上述所有噪声均被定义为动态的高斯噪声，而非静态的噪声，也即每一个step（而非每一个epoch）都会重新采样噪声，理论上这样更加接近真实环境，但是如果现实中存在固定的噪声（例如，摆放Hole时偏移了0.005m），则可能导致难以学习到正确的插入策略。
+
+噪声定义在`peg_in_hole_env_cfg.py`文件的`ObsRandCfg`类中。其中有一个开关`use_all_noise`，如果为True，则对所有定义的观测添加实时动态噪声；如果为False，则只保留原始的、对固定工件位置的初始偏移噪声（`fixed_asset_pos`)。可以修改噪声的标准差以控制噪声的大小。**注意**，噪声开关和噪声大小对于所有任务都生效。
+
+噪声的添加位于` peg_in_hole_env.py`文件的`_get_peginhole_obs_state_dict()`函数中，该函数负责计算并返回所有观测和状态，状态得到的永远是真实值，而观测则是根据状态和噪声计算得到的。
+
+### 记录触觉力
+
+添加了`tactile_datalogger.py`，其中实现了一个记录TacNet输出的触觉三维力`tactile_force`的类。在每个任务配置类中，可以设置以启动记录功能：
+```python
+   tactile = {
+        "tactile_enabled": True, # 是否启用触觉传感器
+        "use_contact_forces_as_obs": False, # 是否使用接触力作为触觉信息
+        "log_tac_force": True, # 是否记录触觉力
+    }
+```
+建议先使用解耦奖励或关键点奖励训练一个不启用触觉的成功插入的策略，在推理时，打开`tactile_enabled`和`log_tac_force`，默认记录在`os.path.join(os.path.dirname(__file__), "tac_force")`目录下。`csv`格式，每一行代表一个step，每一列代表一个维度，包括`step,is_engaged,is_engaged_half,is_success,normal_sum,shear_x_sum,shear_y_sum`，其中`is_*`是代表了插入程度的布尔值。**注意**，只有环境为1，即`num_envs=1`时，打开上述两个开关，且`--enable_cameras`时，才能记录触觉力。
+
+TacNet的触觉力可能并不正确，这是因为他并非在GelSight上训练，所以该功能仅作参考，使用marker点可能更加可靠，相关实现参考`factory_version3`。
 
 ## 代码框架
 

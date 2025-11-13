@@ -19,6 +19,8 @@ from .network.tactile_feature_extractor import create_tactile_encoder
 # 导入我们为Peg-in-Hole任务定义的配置类和工具函数
 from . import peg_in_hole_control, peg_in_hole_utils
 from .peg_in_hole_env_cfg import OBS_DIM_CFG, STATE_DIM_CFG, PegInHoleEnvCfg
+# 导入触觉数据记录器
+from .tactile_datalogger import TactileDataLogger
 
 class PegInHoleEnv(DirectRLEnv):
     """
@@ -178,6 +180,18 @@ class PegInHoleEnv(DirectRLEnv):
                 freeze_model=True
             )
             print(f"    > Tactile feature extractor loaded. Output dim: {self.tactile_extractor.get_output_dim()}")
+            
+        # 初始化触觉数据记录器
+        self.tactile_logger = None
+        self._current_tactile_force = None # 一个临时变量，用于在函数间传递当前帧的触觉力
+        # 检查所有条件是否满足
+        if (self.cfg.evaluation_mode and
+                self.cfg_task.tactile.get("tactile_enabled", False) and
+                self.cfg_task.tactile.get("log_tac_force", False) and
+                self.cfg.scene.num_envs == 1):
+            
+            log_directory = os.path.join(os.path.dirname(__file__), "tac_force")
+            self.tactile_logger = TactileDataLogger(task_name=self.cfg_task.name, log_dir=log_directory)
     
     # ==================================================================
     #                      RL Step Logic (RL 步进逻辑)
@@ -263,89 +277,218 @@ class PegInHoleEnv(DirectRLEnv):
         # 记录当前已处理到的仿真时间戳，用于避免在同一个时间步内重复计算
         self.last_update_timestamp = self._robot._data._sim_timestamp
         
+    # def _get_peginhole_obs_state_dict(self):
+    #     """
+    #     一个辅助函数，负责填充观测和状态字典。
+    #     """
+    #     # 1. 在每个step都重新采样一次高斯噪声，添加到固定工件的位置观测上
+    #     noise = torch.randn((self.num_envs, 3), device=self.device)
+    #     # 2. 从配置中获取噪声的标准差
+    #     noise_std = torch.tensor(self.cfg.obs_rand.fixed_asset_pos, device=self.device)
+        
+    #     # 3. 缩放噪声
+    #     scaled_noise = noise @ torch.diag(noise_std)
+        
+    #     # 4. 将实时噪声应用到观测上
+    #     noisy_fixed_pos = self.fixed_pos_obs_frame + scaled_noise
+    #     # -------------------
+    #     # 计算相对姿态
+    #     current_quat_inv = torch_utils.quat_conjugate(self.fingertip_midpoint_quat)
+    #     fingertip_quat_rel_fixed = torch_utils.quat_mul(current_quat_inv, self.fixed_quat)
+        
+        
+    #     # 如果是需要方向对齐任务，则计算相对于“最近”对称目标的相对姿态
+    #     if self.cfg_task.requires_orientation_logic:
+    #         symmetry_rad = [angle * np.pi / 180.0 for angle in self.cfg_task.symmetry_angles_deg]
+    #         # 调用新的核心函数
+    #         _closest_target_quat, relative_quat_to_closest, _min_yaw_error = \
+    #             peg_in_hole_utils.get_closest_symmetry_transform(
+    #                 self.fingertip_midpoint_quat, self.fixed_quat, symmetry_rad
+    #             )
+    #         # 【关键】用计算出的、指向最近目标的相对姿态，覆盖掉默认的相对姿态
+    #         fingertip_quat_rel_fixed = relative_quat_to_closest
+
+    #     prev_actions = self.actions.clone()
+            
+    #     # 填充观测字典（给Actor的信息）
+    #     obs_dict = {
+    #         # 关键信息：指尖相对于“有噪声的目标”的相对位置。这是最重要的观测
+    #         "fingertip_pos": self.fingertip_midpoint_pos,
+    #         "fingertip_pos_rel_fixed": self.fingertip_midpoint_pos - noisy_fixed_pos,
+    #         "fingertip_quat": self.fingertip_midpoint_quat,
+    #         "fingertip_quat_rel_fixed": fingertip_quat_rel_fixed,
+    #         "ee_linvel": self.ee_linvel_fd, # 使用有限差分计算的速度
+    #         "ee_angvel": self.ee_angvel_fd,
+    #         "prev_actions": prev_actions,
+    #     }
+
+    #     # 填充状态字典（给Critic的更完整的信息）
+    #     state_dict = {
+    #         # Critic可以看到无噪声的相对位置
+    #         "fingertip_pos": self.fingertip_midpoint_pos,
+    #         "fingertip_pos_rel_fixed": self.fingertip_midpoint_pos - self.fixed_pos_obs_frame,
+    #         "fingertip_quat": self.fingertip_midpoint_quat,
+    #         "fingertip_quat_rel_fixed": fingertip_quat_rel_fixed,
+    #         # Critic可以看到真实的、从物理引擎读取的速度
+    #         "ee_linvel": self.fingertip_midpoint_linvel,
+    #         "ee_angvel": self.fingertip_midpoint_angvel,
+    #         # Critic可以看到所有“上帝视角”的真实信息
+    #         "joint_pos": self.joint_pos[:, 0:7],
+    #         "held_pos": self.held_pos,
+    #         "held_pos_rel_fixed": self.held_pos - self.fixed_pos_obs_frame,
+    #         "held_quat": self.held_quat,
+    #         "fixed_pos": self.fixed_pos,
+    #         "fixed_quat": self.fixed_quat,
+    #         # ... 其他信息 ...
+    #         "task_prop_gains": self.task_prop_gains,
+    #         "pos_threshold": self.pos_threshold,
+    #         "rot_threshold": self.rot_threshold,
+    #         "prev_actions": prev_actions,
+    #     }
+        
+    #     tactile_force_field = torch.zeros((self.num_envs, 3), device=self.device)
+        
+    #     if self.cfg_task.tactile.get("tactile_enabled", False):
+    #         # 1. Get tactile sensor data
+    #         tactile_left = self.gsmini_left.data.output.get("tactile_rgb")
+    #         tactile_right = self.gsmini_right.data.output.get("tactile_rgb")
+            
+    #         # 2. Extract force field features for observation
+    #         #    tactile_extractor expects (B, H, W, 3) in range [0, 1]
+    #         if tactile_left is not None and tactile_right is not None:
+    #             tactile_force_field = self.tactile_extractor(tactile_left.float() / 255.0, tactile_right.float() / 255.0)
+            
+    #     self._current_tactile_force = tactile_force_field
+                
+    #     obs_dict["tactile_force_field"] = tactile_force_field
+    #     state_dict["tactile_force_field"] = tactile_force_field
+                
+    #     return obs_dict, state_dict
+    
+    # (在 PegInHoleEnv 类中)
+
     def _get_peginhole_obs_state_dict(self):
         """
-        一个辅助函数，负责填充观测和状态字典。
+        填充观测和状态字典，并根据配置应用实时动态噪声。
         """
-        # 1. 在每个step都重新采样一次高斯噪声，添加到固定工件的位置观测上
-        noise = torch.randn((self.num_envs, 3), device=self.device)
-        # 2. 从配置中获取噪声的标准差
-        noise_std = torch.tensor(self.cfg.obs_rand.fixed_asset_pos, device=self.device)
+        # --- 1. 获取所有“干净”的原始值 ---
+        clean_fingertip_pos = self.fingertip_midpoint_pos
+        clean_fingertip_quat = self.fingertip_midpoint_quat
+        clean_ee_linvel = self.ee_linvel_fd
+        clean_ee_angvel = self.ee_angvel_fd
         
-        # 3. 缩放噪声
-        scaled_noise = noise @ torch.diag(noise_std)
+        clean_tactile_force_field = torch.zeros((self.num_envs, 3), device=self.device)
+        if self.cfg_task.tactile.get("tactile_enabled", False):
+            tactile_left = self.gsmini_left.data.output.get("tactile_rgb")
+            tactile_right = self.gsmini_right.data.output.get("tactile_rgb")
+            if tactile_left is not None and tactile_right is not None:
+                clean_tactile_force_field = self.tactile_extractor(tactile_left.float() / 255.0, tactile_right.float() / 255.0)
+
+        # --- 2. 根据 use_all_noise 标志决定如何生成“有噪声”的值 ---
+        if self.cfg.obs_rand.use_all_noise:
+            # --- 模式一：为所有观测添加实时动态噪声 ---
+            
+            # a. 固定工件位置噪声
+            noise = torch.randn_like(self.fixed_pos_obs_frame)
+            noise_std = torch.tensor(self.cfg.obs_rand.fixed_asset_pos, device=self.device)
+            noisy_fixed_pos = self.fixed_pos_obs_frame + (noise @ torch.diag(noise_std))
+
+            # b. 机器人末端位置噪声
+            noise = torch.randn_like(clean_fingertip_pos)
+            noise_std = torch.tensor(self.cfg.obs_rand.fingertip_pos, device=self.device)
+            noisy_fingertip_pos = clean_fingertip_pos + (noise @ torch.diag(noise_std))
+
+            # c. 机器人末端姿态噪声
+            noise = torch.randn((self.num_envs, 3), device=self.device) # 保证是 (N,3)
+            noise_std = torch.tensor(self.cfg.obs_rand.fingertip_quat, device=self.device)
+            aa_noise = noise @ torch.diag(noise_std)
+            angle = torch.norm(aa_noise, p=2, dim=-1)
+            axis = aa_noise / (angle.unsqueeze(-1) + 1e-6) # 加上eps防止除以0
+            quat_noise = torch_utils.quat_from_angle_axis(angle, axis)
+            noisy_fingertip_quat = torch_utils.quat_mul(quat_noise, clean_fingertip_quat)
+            
+            # d. 速度噪声
+            noise = torch.randn_like(clean_ee_linvel)
+            noise_std = torch.tensor(self.cfg.obs_rand.ee_linvel, device=self.device)
+            noisy_ee_linvel = clean_ee_linvel + (noise @ torch.diag(noise_std))
+
+            noise = torch.randn_like(clean_ee_angvel)
+            noise_std = torch.tensor(self.cfg.obs_rand.ee_angvel, device=self.device)
+            noisy_ee_angvel = clean_ee_angvel + (noise @ torch.diag(noise_std))
+
+            # e. 触觉噪声
+            noise = torch.randn_like(clean_tactile_force_field)
+            noise_std = torch.tensor(self.cfg.obs_rand.tactile_force_field, device=self.device)
+            noisy_tactile_force_field = clean_tactile_force_field + (noise @ torch.diag(noise_std))
+
+        else:
+            # --- 模式二：保持原始行为（只对Hole位置有初始偏移） ---
+            noisy_fixed_pos = self.fixed_pos_obs_frame + self.init_fixed_pos_obs_noise
+            noisy_fingertip_pos = clean_fingertip_pos
+            noisy_fingertip_quat = clean_fingertip_quat
+            noisy_ee_linvel = clean_ee_linvel
+            noisy_ee_angvel = clean_ee_angvel
+            noisy_tactile_force_field = clean_tactile_force_field
+
+        # --- 3. 使用“有噪声”或“干净”的值来计算衍生的观测值 ---
         
-        # 4. 将实时噪声应用到观测上
-        noisy_fixed_pos = self.fixed_pos_obs_frame + scaled_noise
-        # -------------------
-        # 计算相对姿态
-        current_quat_inv = torch_utils.quat_conjugate(self.fingertip_midpoint_quat)
-        fingertip_quat_rel_fixed = torch_utils.quat_mul(current_quat_inv, self.fixed_quat)
+        # 相对姿态的计算需要根据情况使用有噪声或干净的quat
+        # 为了简化，我们统一在外部计算
         
+        # --- 4. 填充字典 ---
+        prev_actions = self.actions.clone()
         
-        # 如果是需要方向对齐任务，则计算相对于“最近”对称目标的相对姿态
+        # -- 状态字典 (state_dict) 总是使用“干净”的真实值 --
+        
+        # a. 先计算干净的相对姿态
+        clean_current_quat_inv = torch_utils.quat_conjugate(clean_fingertip_quat)
+        clean_fingertip_quat_rel_fixed = torch_utils.quat_mul(clean_current_quat_inv, self.fixed_quat)
         if self.cfg_task.requires_orientation_logic:
             symmetry_rad = [angle * np.pi / 180.0 for angle in self.cfg_task.symmetry_angles_deg]
-            # 调用新的核心函数
-            _closest_target_quat, relative_quat_to_closest, _min_yaw_error = \
-                peg_in_hole_utils.get_closest_symmetry_transform(
-                    self.fingertip_midpoint_quat, self.fixed_quat, symmetry_rad
+            _, clean_relative_quat_to_closest, _ = peg_in_hole_utils.get_closest_symmetry_transform(
+                    clean_fingertip_quat, self.fixed_quat, symmetry_rad
                 )
-            # 【关键】用计算出的、指向最近目标的相对姿态，覆盖掉默认的相对姿态
-            fingertip_quat_rel_fixed = relative_quat_to_closest
-
-        prev_actions = self.actions.clone()
-            
-        # 填充观测字典（给Actor的信息）
-        obs_dict = {
-            # 关键信息：指尖相对于“有噪声的目标”的相对位置。这是最重要的观测
-            "fingertip_pos": self.fingertip_midpoint_pos,
-            "fingertip_pos_rel_fixed": self.fingertip_midpoint_pos - noisy_fixed_pos,
-            "fingertip_quat": self.fingertip_midpoint_quat,
-            "fingertip_quat_rel_fixed": fingertip_quat_rel_fixed,
-            "ee_linvel": self.ee_linvel_fd, # 使用有限差分计算的速度
-            "ee_angvel": self.ee_angvel_fd,
-            "prev_actions": prev_actions,
-        }
-
-        # 填充状态字典（给Critic的更完整的信息）
+            clean_fingertip_quat_rel_fixed = clean_relative_quat_to_closest
+        
         state_dict = {
-            # Critic可以看到无噪声的相对位置
-            "fingertip_pos": self.fingertip_midpoint_pos,
-            "fingertip_pos_rel_fixed": self.fingertip_midpoint_pos - self.fixed_pos_obs_frame,
-            "fingertip_quat": self.fingertip_midpoint_quat,
-            "fingertip_quat_rel_fixed": fingertip_quat_rel_fixed,
-            # Critic可以看到真实的、从物理引擎读取的速度
+            "fingertip_pos": clean_fingertip_pos,
+            "fingertip_pos_rel_fixed": clean_fingertip_pos - self.fixed_pos_obs_frame,
+            "fingertip_quat": clean_fingertip_quat,
+            "fingertip_quat_rel_fixed": clean_fingertip_quat_rel_fixed,
             "ee_linvel": self.fingertip_midpoint_linvel,
             "ee_angvel": self.fingertip_midpoint_angvel,
-            # Critic可以看到所有“上帝视角”的真实信息
+            "tactile_force_field": clean_tactile_force_field,
             "joint_pos": self.joint_pos[:, 0:7],
             "held_pos": self.held_pos,
             "held_pos_rel_fixed": self.held_pos - self.fixed_pos_obs_frame,
             "held_quat": self.held_quat,
             "fixed_pos": self.fixed_pos,
             "fixed_quat": self.fixed_quat,
-            # ... 其他信息 ...
-            "task_prop_gains": self.task_prop_gains,
-            "pos_threshold": self.pos_threshold,
-            "rot_threshold": self.rot_threshold,
             "prev_actions": prev_actions,
         }
         
-        tactile_force_field = torch.zeros((self.num_envs, 3), device=self.device)
+        # -- 观测字典 (obs_dict) 使用所有“有噪声”的值 --
         
-        if self.cfg_task.tactile["tactile_enabled"] and self.cfg_task.tactile["use_contact_forces_as_obs"]:
-            # 1. Get tactile sensor data
-            tactile_left = self.gsmini_left.data.output.get("tactile_rgb")
-            tactile_right = self.gsmini_right.data.output.get("tactile_rgb")
+        # a. 用有噪声的值计算相对姿态
+        noisy_current_quat_inv = torch_utils.quat_conjugate(noisy_fingertip_quat)
+        noisy_fingertip_quat_rel_fixed = torch_utils.quat_mul(noisy_current_quat_inv, self.fixed_quat)
+        if self.cfg_task.requires_orientation_logic:
+            symmetry_rad = [angle * np.pi / 180.0 for angle in self.cfg_task.symmetry_angles_deg]
+            _, noisy_relative_quat_to_closest, _ = peg_in_hole_utils.get_closest_symmetry_transform(
+                    noisy_fingertip_quat, self.fixed_quat, symmetry_rad
+                )
+            noisy_fingertip_quat_rel_fixed = noisy_relative_quat_to_closest
             
-            # 2. Extract force field features for observation
-            #    tactile_extractor expects (B, H, W, 3) in range [0, 1]
-            if tactile_left is not None and tactile_right is not None:
-                tactile_force_field = self.tactile_extractor(tactile_left.float() / 255.0, tactile_right.float() / 255.0)
-                
-        obs_dict["tactile_force_field"] = tactile_force_field
-        state_dict["tactile_force_field"] = tactile_force_field
+        obs_dict = {
+            "fingertip_pos": noisy_fingertip_pos,
+            "fingertip_pos_rel_fixed": noisy_fingertip_pos - noisy_fixed_pos,
+            "fingertip_quat": noisy_fingertip_quat,
+            "fingertip_quat_rel_fixed": noisy_fingertip_quat_rel_fixed,
+            "ee_linvel": noisy_ee_linvel,
+            "ee_angvel": noisy_ee_angvel,
+            "tactile_force_field": noisy_tactile_force_field,
+            "prev_actions": prev_actions,
+        }
                 
         return obs_dict, state_dict
     
@@ -757,7 +900,15 @@ class PegInHoleEnv(DirectRLEnv):
                 orientation_mask = (min_yaw_error < orientation_threshold).float()
                 # 门控应用于 kp_fine
                 rew_dict["kp_fine"] *= orientation_mask
-                
+        
+        if self.tactile_logger is not None:
+            self.tactile_logger.log_step(
+                step=self.episode_length_buf[0].item(),
+                is_engaged=rew_dict["curr_engaged"][0].item(), # 从字典中获取
+                is_engaged_half=rew_dict["curr_engaged_half"][0].item(), # 从字典中获取
+                is_success=rew_dict["curr_success"][0].item(), # 从字典中获取
+                tactile_force=self._current_tactile_force[0]
+            )        
         return rew_dict, rew_scales, curr_successes
     
     def _get_rewards(self):
@@ -830,6 +981,9 @@ class PegInHoleEnv(DirectRLEnv):
         self.step_sim_no_action() # 3. 在不施加任何动作的情况下，让物理仿真运行一小步，以确保所有物体都“安顿”下来
 
         self.randomize_initial_state(env_ids) # 4. 执行核心的随机化流程
+        
+        if self.tactile_logger is not None:
+            self.tactile_logger.start_new_episode() # 重置触觉日志记录器
         
         # Don't save at reset - sensors have no contact data yet
         # if self.cfg_task.tactile["tactile_enabled"]:
@@ -1332,3 +1486,11 @@ class PegInHoleEnv(DirectRLEnv):
 
         except Exception as e:
             print(f"[Tactile Visualization] Error saving tactile images: {e}")
+    
+    def close(self):
+        """关闭环境并释放资源。"""
+        if self.tactile_logger is not None:
+            self.tactile_logger.close()
+        # -------------------
+        # 调用父类的 close 方法
+        super().close()

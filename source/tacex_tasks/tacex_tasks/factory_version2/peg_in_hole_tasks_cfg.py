@@ -130,6 +130,7 @@ class PegInHoleTask:
     tactile = {
         "tactile_enabled": False, # 是否启用触觉传感器
         "use_contact_forces_as_obs": False, # 是否使用接触力作为触觉信息
+        "log_tac_force": True, # 启用日志记录的开关，将触觉力数据记录到CSV文件中，当且仅当("tactile_enabled":True && "log_tac_force":True && play模式 $$ num_envs=1) 时，才会记录触觉力数据，记录到os.path.join(os.path.dirname(__file__), "tac_force")目录下
     }
     if tactile["tactile_enabled"] and tactile["use_contact_forces_as_obs"]:
     # 定义带有触觉的观测顺序
@@ -402,7 +403,7 @@ class PegInHoleCircleHole_IV(PegInHoleTask):
     fixed_asset_cfg = CircleHole() # 指定固定工件是圆孔
     held_asset_cfg = CirclePeg_IV() # 指定手持工件是公差I的圆形插销
     asset_size = held_asset_cfg.diameter
-    duration_s = 10.0 # 任务时长10秒
+    duration_s = 15.0 # 任务时长10秒
     
     # -- 随机化参数覆写 --
     # Robot末端初始位置
@@ -414,7 +415,8 @@ class PegInHoleCircleHole_IV(PegInHoleTask):
     # Held Asset
     
     # -- 奖励函数参数覆写 --
-    z_reward_activation_threshold: float = 0.0005
+    z_dist_reward_scale: float = 2.5 # z方向奖励系数
+    z_reward_activation_threshold: float = 0.0001 # z方向奖励激活阈值
     orientation_reward_scale: float = 0.0 # 圆孔任务不需要姿态对齐奖励
     yaw_success_threshold: float = 0.0  # 圆孔任务不需要姿态对齐成功判定
     symmetry_angles_deg: list = [] # 圆孔任务不需要姿态对齐对称性处理
@@ -431,6 +433,7 @@ class PegInHoleCircleHole_IV(PegInHoleTask):
     tactile = {
         "tactile_enabled": False, # 是否启用触觉传感器
         "use_contact_forces_as_obs": False, # 是否使用接触力作为触觉信息
+        "log_tac_force": False,
     }
     # 注意：圆形孔任务中，不需要fingertip_quat_rel_fixed这个观测量
     if tactile["tactile_enabled"] and tactile["use_contact_forces_as_obs"]:
@@ -624,8 +627,9 @@ class PegInHoleSquareHole_II(PegInHoleTask):
     
     # ================ 触觉 =================
     tactile = {
-        "tactile_enabled": False, # 是否启用触觉传感器
+        "tactile_enabled": True, # 是否启用触觉传感器
         "use_contact_forces_as_obs": False, # 是否使用接触力作为触觉信息
+        "log_tac_force": True,
     }
     # 采用默认的观测顺序，不需要改动
     
@@ -700,7 +704,7 @@ class SquarePeg_IV(HeldAssetCfg):
 @configclass
 class PegInHoleSquareHole_IV(PegInHoleTask):
     """
-    公差II的方形插销插入任务配置
+    公差IV的方形插销插入任务配置
     """
     # -- 1. 基本信息 --
     name = "peg_in_hole_square_IV" # 任务名称
@@ -710,8 +714,8 @@ class PegInHoleSquareHole_IV(PegInHoleTask):
     duration_s = 15.0  # 方形任务更难，可以适当增加任务时长
 
     # -- 随机化参数覆写 --
-    hand_init_orn_noise: list = [0.0, 0.0, 0.785] # 允许在偏航角上有 +/- 45度的随机转动，增大任务难度
-    fixed_asset_init_orn_range_deg: float = 90.0 # 方孔的偏航角随机化范围缩小到15度，避免过大旋转导致任务过难
+    hand_init_orn_noise: list = [0.0, 0.0, 0.2] # 允许在偏航角上有 +/- 11.5度的随机转动
+    fixed_asset_init_orn_range_deg: float = 30.0
     
     # -- 奖励函数参数覆写 --
     
@@ -720,7 +724,7 @@ class PegInHoleSquareHole_IV(PegInHoleTask):
 
     orientation_reward_scale: float = 3.0  # 姿态对齐奖励的权重
     # 成功完成任务时，允许的最终偏航角误差（弧度）
-    yaw_success_threshold: float = 0.05  # 弧度，约等于2.86度
+    yaw_success_threshold: float = 0.005  # 弧度，约等于0.29度
     
     # 正方形有4个对称方向：0, 90, 180, 270 度
     symmetry_angles_deg: list = [0.0, 90.0, 180.0, 270.0]
@@ -729,8 +733,8 @@ class PegInHoleSquareHole_IV(PegInHoleTask):
     xy_dist_coef: list = [50, 2]
     xy_dist_reward_scale: float = 2.0
     z_dist_coef: list = [20, 4]
-    z_dist_reward_scale: float = 2.0
-    z_reward_activation_threshold: float = 0.0005 # 当x，y平面距离小于0.5mm时，才激活Z轴奖励
+    z_dist_reward_scale: float = 2.5
+    z_reward_activation_threshold: float = 0.0001 # 当x，y平面距离小于0.5mm时，才激活Z轴奖励
 
     # ================= 奖励函数选择 =================
     requires_orientation_logic: bool = True
@@ -740,6 +744,7 @@ class PegInHoleSquareHole_IV(PegInHoleTask):
     tactile = {
         "tactile_enabled": False, # 是否启用触觉传感器
         "use_contact_forces_as_obs": False, # 是否使用接触力作为触觉信息
+        "log_tac_force": False,
     }
     # 采用默认的观测顺序，不需要改动
 # ================= Peg in hole L Hole =================
@@ -953,12 +958,12 @@ class PegInHoleLHole_IV(PegInHoleTask):
     fixed_asset_init_orn_range_deg: float = 30.0
     
     # -- 奖励函数参数覆写 --
-    action_penalty_ee_scale: float = 0.03 # 对动作大小的惩罚系数。较大的动作会受到惩罚，鼓励更平滑的控制
-    action_grad_penalty_scale: float = 0.1 # 对动作变化率（梯度）的惩罚系数。鼓励动作的连续
+    action_penalty_ee_scale: float = 0.01 # 对动作大小的惩罚系数。较大的动作会受到惩罚，鼓励更平滑的控制
+    action_grad_penalty_scale: float = 0.05 # 对动作变化率（梯度）的惩罚系数。鼓励动作的连续
 
     orientation_reward_scale: float = 3.0  # 姿态对齐奖励的权重
     # 成功完成任务时，允许的最终偏航角误差（弧度）
-    yaw_success_threshold: float = 0.01  # 弧度，约等于1.15度
+    yaw_success_threshold: float = 0.005  # 弧度，约等于1.15度
     
     # L形只有1个对称方向：0度
     symmetry_angles_deg: list = [0.0]
@@ -967,8 +972,8 @@ class PegInHoleLHole_IV(PegInHoleTask):
     xy_dist_coef: list = [50, 2]
     xy_dist_reward_scale: float = 2.0
     z_dist_coef: list = [20, 4]
-    z_dist_reward_scale: float = 2.0
-    z_reward_activation_threshold: float = 0.0002 # 当x，y平面距离小于0.2mm时，才激活Z轴奖励
+    z_dist_reward_scale: float = 2.5
+    z_reward_activation_threshold: float = 0.0001 # 当x，y平面距离小于0.2mm时，才激活Z轴奖励
     
     # ================= 奖励函数选择 =================
     requires_orientation_logic: bool = True
@@ -978,6 +983,7 @@ class PegInHoleLHole_IV(PegInHoleTask):
     tactile = {
         "tactile_enabled": False, # 是否启用触觉传感器
         "use_contact_forces_as_obs": False, # 是否使用接触力作为触觉信息
+        "log_tac_force": False,
     }
     # 采用默认的观测顺序，不需要改动
     
@@ -1170,7 +1176,7 @@ class PegInHoleTriangleHole_IV(PegInHoleTask):
     fixed_asset_cfg = TriangleHole()
     held_asset_cfg = TrianglePeg_IV()
     asset_size = held_asset_cfg.diameter
-    duration_s = 20.0  # 三角形任务更难，可以适当增加任务时长
+    duration_s = 15.0  # 三角形任务更难，可以适当增加任务时长
 
     # -- 随机化参数覆写 --
     # Robot末端初始位置
@@ -1182,7 +1188,7 @@ class PegInHoleTriangleHole_IV(PegInHoleTask):
     action_grad_penalty_scale: float = 0.1 # 对动作变化率（梯度）的惩罚系数。鼓励动作的连续
     orientation_reward_scale: float = 3.0  # 姿态对齐奖励的权重
     # 成功完成任务时，允许的最终偏航角误差（弧度）
-    yaw_success_threshold: float = 0.01  # 弧度，约等于1.15度
+    yaw_success_threshold: float = 0.005  # 弧度，约等于1.15度
     # 三角形只有3个对称方向： 0, 120, 240 度
     symmetry_angles_deg: list = [0.0, 120.0, 240.0]
     orientation_coef: list = [5, 4]
@@ -1190,8 +1196,8 @@ class PegInHoleTriangleHole_IV(PegInHoleTask):
     xy_dist_coef: list = [50, 2]
     xy_dist_reward_scale: float = 2.0
     z_dist_coef: list = [20, 4]
-    z_dist_reward_scale: float = 2.0
-    z_reward_activation_threshold: float = 0.0002 # 当x，y平面距离小于0.2mm时，才激活Z轴奖励
+    z_dist_reward_scale: float = 2.5
+    z_reward_activation_threshold: float = 0.0001 # 当x，y平面距离小于0.2mm时，才激活Z轴奖励
 
     # ================= 奖励函数选择 =================
     requires_orientation_logic: bool = True
@@ -1201,6 +1207,7 @@ class PegInHoleTriangleHole_IV(PegInHoleTask):
     tactile = {
         "tactile_enabled": False, # 是否启用触觉传感器
         "use_contact_forces_as_obs": False, # 是否使用接触力作为触觉信息
+        "log_tac_force": False,
     }
     # 采用默认的观测顺序，不需要改动
     
@@ -1385,7 +1392,7 @@ class PegInHoleHexagonHole_IV(PegInHoleTask):
     fixed_asset_cfg = HexagonHole()
     held_asset_cfg = HexagonPeg_IV()
     asset_size = held_asset_cfg.diameter
-    duration_s = 20.0  # 六边形任务更难，可以适当增加任务时长
+    duration_s = 15.0  # 六边形任务更难，可以适当增加任务时长
 
     # -- 随机化参数覆写 --
     # Robot末端初始位置
@@ -1397,7 +1404,7 @@ class PegInHoleHexagonHole_IV(PegInHoleTask):
     action_grad_penalty_scale: float = 0.1 # 对动作变化率（梯度）的惩罚系数。鼓励动作的连续
     orientation_reward_scale: float = 3.0  # 姿态对齐奖励的权重
     # 成功完成任务时，允许的最终偏航角误差（弧度）
-    yaw_success_threshold: float = 0.01  # 弧度，约等于1.15度
+    yaw_success_threshold: float = 0.005  # 弧度，约等于1.15度
     # 六边形有6个对称方向： 0, 60, 120, 180, 240, 300 度
     symmetry_angles_deg: list = [0.0, 60.0, 120.0, 180.0, 240.0, 300.0]
     orientation_coef: list = [5, 4]
@@ -1405,8 +1412,8 @@ class PegInHoleHexagonHole_IV(PegInHoleTask):
     xy_dist_coef: list = [50, 2]
     xy_dist_reward_scale: float = 2.0
     z_dist_coef: list = [20, 4]
-    z_dist_reward_scale: float = 2.0
-    z_reward_activation_threshold: float = 0.0002 # 当x，y平面距离小于0.2mm时，才激活Z轴奖励
+    z_dist_reward_scale: float = 2.5
+    z_reward_activation_threshold: float = 0.0001 # 当x，y平面距离小于0.2mm时，才激活Z轴奖励
 
     # ================= 奖励函数选择 =================
     requires_orientation_logic: bool = True
@@ -1416,4 +1423,5 @@ class PegInHoleHexagonHole_IV(PegInHoleTask):
     tactile = {
         "tactile_enabled": False, # 是否启用触觉传感器
         "use_contact_forces_as_obs": False, # 是否使用接触力作为触觉信息
+        "log_tac_force": False,
     }
